@@ -152,7 +152,7 @@
                         </svg>
                     </div>
 
-                    <!-- Bulan Sabit & Ketupat Tengah -->
+                    <!-- Bulan Sabit Tengah -->
                     <div onclick="triggerMascotCheer(this)" class="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl bg-gradient-to-br from-pastel-sageLight via-pastel-butterLight to-pastel-roseLight border border-pastel-warm shadow-card flex items-center justify-center animate-float-soft cursor-pointer select-none">
                         <svg class="w-8 h-8 text-pastel-sageDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
@@ -533,7 +533,7 @@
                         <div>
                             <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/15 text-white mb-1.5">Waktu Sholat Berikutnya</span>
                             <h2 id="jadwal-next-name" class="text-2xl sm:text-3xl font-extrabold">Maghrib</h2>
-                            <p id="jadwal-next-detail" class="text-xs sm:text-sm text-white/90 mt-0.5">Pukul 17:46 • Bekasi &amp; Sekitarnya</p>
+                            <p id="jadwal-next-detail" class="text-xs sm:text-sm text-white/90 mt-0.5">Pukul 17:52 • Bekasi &amp; Sekitarnya</p>
                         </div>
                         <div class="bg-white/15 backdrop-blur-xs border border-white/20 rounded-2xl px-4 py-3 text-left sm:text-right shrink-0">
                             <p class="text-[10px] font-bold uppercase tracking-wider text-white/80">Hitung Mundur</p>
@@ -699,7 +699,7 @@
                 <div class="bg-gradient-to-r from-pastel-skyLight via-pastel-sageLight/70 to-pastel-butterLight muslim-frame-card rounded-3xl p-4 sm:p-6 border border-pastel-warm flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h2 class="text-lg sm:text-2xl font-extrabold text-pastel-ink">Kalender Islam &amp; Ibadah</h2>
-                        <p class="text-xs sm:text-sm text-pastel-muted mt-0.5">Pantau tanggal Masehi, Hijriah, hari sunnah &amp; catatan ibadah bulanan</p>
+                        <p class="text-xs sm:text-sm text-pastel-muted mt-0.5">Pantau tanggal Masehi, Hijriah, hari sunnah &amp; hari raya Islam</p>
                     </div>
                     <div class="flex items-center gap-1.5">
                         <button onclick="changeCalendarMonth(-1)" class="w-9 h-9 rounded-2xl bg-white border border-pastel-warm font-extrabold text-pastel-ink hover:bg-pastel-cream cursor-pointer">←</button>
@@ -1106,41 +1106,64 @@
             const dow = dateObj.getDay();
             const isAyyamulBidh = [13, 14, 15].includes(hijriInfo.day);
             let holidayName = '';
+            let shortHolidayLabel = '';
 
             if (hijriInfo.month === 1 && hijriInfo.day === 1) {
                 holidayName = 'Tahun Baru Islam (1 Muharram)';
+                shortHolidayLabel = 'Tahun Baru Islam';
             } else if (hijriInfo.month === 1 && hijriInfo.day === 10) {
                 holidayName = 'Puasa Asyura (10 Muharram)';
+                shortHolidayLabel = 'Puasa Asyura';
             } else if (hijriInfo.month === 3 && hijriInfo.day === 12) {
                 holidayName = 'Maulid Nabi Muhammad SAW';
+                shortHolidayLabel = 'Maulid Nabi';
             } else if (hijriInfo.month === 7 && hijriInfo.day === 27) {
                 holidayName = 'Isra Mi\'raj';
+                shortHolidayLabel = 'Isra Mi\'raj';
             } else if (hijriInfo.month === 10 && hijriInfo.day === 1) {
                 holidayName = 'Hari Raya Idul Fitri (1 Syawal)';
+                shortHolidayLabel = 'Idul Fitri';
             } else if (hijriInfo.month === 12 && hijriInfo.day === 9) {
                 holidayName = 'Puasa Arafah (9 Dzulhijjah)';
+                shortHolidayLabel = 'Puasa Arafah';
             } else if (hijriInfo.month === 12 && hijriInfo.day === 10) {
                 holidayName = 'Hari Raya Idul Adha (10 Dzulhijjah)';
+                shortHolidayLabel = 'Idul Adha';
             }
 
             if (holidayName) {
                 return {
                     type: 'holiday',
                     badge: 'Hari Raya / PHBI',
+                    shortLabel: shortHolidayLabel,
                     note: holidayName
                 };
             }
 
             const sunnahs = [];
-            if (isAyyamulBidh) sunnahs.push('Puasa Sunnah Ayyamul Bidh (13–15 H)');
-            if (dow === 1) sunnahs.push('Puasa Sunnah Senin');
-            if (dow === 4) sunnahs.push('Puasa Sunnah Kamis');
-            if (dow === 5) sunnahs.push('Sunnah Jum\'at & Al-Kahfi');
+            const shortLabels = [];
+            if (isAyyamulBidh) {
+                sunnahs.push('Puasa Sunnah Ayyamul Bidh (13–15 H)');
+                shortLabels.push('Ayyamul Bidh');
+            }
+            if (dow === 1) {
+                sunnahs.push('Puasa Sunnah Senin');
+                shortLabels.push('Puasa Senin');
+            }
+            if (dow === 4) {
+                sunnahs.push('Puasa Sunnah Kamis');
+                shortLabels.push('Puasa Kamis');
+            }
+            if (dow === 5) {
+                sunnahs.push('Sunnah Jum\'at & Al-Kahfi');
+                shortLabels.push('Sunnah Jum\'at');
+            }
 
             if (sunnahs.length) {
                 return {
                     type: 'sunnah',
                     badge: 'Puasa / Sunnah',
+                    shortLabel: shortLabels.join(' • '),
                     note: sunnahs.join(' • ')
                 };
             }
@@ -1148,6 +1171,7 @@
             return {
                 type: 'normal',
                 badge: 'Hari Biasa',
+                shortLabel: '',
                 note: 'Tanggal Hijriah & Masehi umum'
             };
         }
@@ -1171,54 +1195,39 @@
             if (isMuslimah) {
                 return `<div class="${bg} w-full h-full rounded-2xl flex items-center justify-center relative overflow-hidden">
                     <svg class="w-9 h-9" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <!-- Kerudung / hijab chibi perempuan menutupi kepala & leher -->
                         <path d="M18 3.5C9.4 3.5 4.8 9.8 4.8 18.8C4.8 24.4 3.6 28.6 2.8 31.8H33.2C32.4 28.6 31.2 24.4 31.2 18.8C31.2 9.8 26.6 3.5 18 3.5Z" fill="currentColor" fill-opacity="0.34" />
-                        <!-- Pita kecil di puncak kerudung -->
                         <path d="M18 5.6L14 3.2C13.2 2.8 12.6 3.8 13.3 4.6L16.2 6.5" fill="currentColor" fill-opacity="0.45" />
                         <path d="M18 5.6L22 3.2C22.8 2.8 23.4 3.8 22.7 4.6L19.8 6.5" fill="currentColor" fill-opacity="0.45" />
                         <circle cx="18" cy="5.9" r="1.2" fill="currentColor" />
-                        <!-- Bukaan wajah bulat chibi di dalam kerudung -->
                         <ellipse cx="18" cy="18.2" rx="6.9" ry="6.2" fill="#FDFBF7" />
-                        <!-- Lipatan kerudung di sisi kanan-kiri wajah & bawah dagu -->
                         <path d="M11.3 16.5C9.3 18.5 8.8 22.2 10.2 25.8" />
                         <path d="M24.7 16.5C26.7 18.5 27.2 22.2 25.8 25.8" />
                         <path d="M12.2 23.4C14.2 25.6 21.8 25.6 23.8 23.4" />
-                        <!-- Mata chibi bulat berbinar -->
                         <circle cx="15.1" cy="17.8" r="1.9" fill="currentColor" stroke="none" />
                         <circle cx="20.9" cy="17.8" r="1.9" fill="currentColor" stroke="none" />
                         <circle cx="15.65" cy="17.15" r="0.68" fill="#FFFFFF" stroke="none" />
                         <circle cx="21.45" cy="17.15" r="0.68" fill="#FFFFFF" stroke="none" />
-                        <!-- Pipi chibi merona -->
                         <ellipse cx="12.8" cy="20.1" rx="1.6" ry="0.9" fill="#D98A9E" fill-opacity="0.75" stroke="none" />
                         <ellipse cx="23.2" cy="20.1" rx="1.6" ry="0.9" fill="#D98A9E" fill-opacity="0.75" stroke="none" />
-                        <!-- Senyum chibi manis -->
                         <path d="M16.3 20.8C17.1 21.85 18.9 21.85 19.7 20.8" />
-                        <!-- Bagian bawah kerudung menutup leher & bahu -->
                         <path d="M8.8 31.8C10.5 27.6 13.8 26.2 18 26.2C22.2 26.2 25.5 27.6 27.2 31.8" />
                     </svg>
                 </div>`;
             }
             return `<div class="${bg} w-full h-full rounded-2xl flex items-center justify-center relative overflow-hidden">
                 <svg class="w-9 h-9" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <!-- Kopiah / peci chibi laki-laki menggemaskan -->
                     <path d="M9.6 12.6L11.8 6.8C15.8 5.5 20.2 5.5 24.2 6.8L26.4 12.6H9.6Z" fill="currentColor" fill-opacity="0.32" />
                     <path d="M10.6 12.6H25.4" stroke-width="2.2" />
                     <path d="M15.5 6.4L18 9.2L20.5 6.4" stroke-width="1.5" />
-                    <!-- Wajah bulat chibi laki-laki -->
                     <ellipse cx="18" cy="18.8" rx="7.3" ry="6.6" fill="#FDFBF7" />
-                    <!-- Poni chibi lucu -->
                     <path d="M13 13.8C14.8 15.3 16.6 14.8 18 13.5C19.4 14.8 21.2 15.3 23 13.8" stroke-width="1.65" />
-                    <!-- Mata chibi bulat besar berbinar -->
                     <circle cx="15.1" cy="18.2" r="1.8" fill="currentColor" stroke="none" />
                     <circle cx="20.9" cy="18.2" r="1.8" fill="currentColor" stroke="none" />
                     <circle cx="15.65" cy="17.55" r="0.62" fill="#FFFFFF" stroke="none" />
                     <circle cx="21.45" cy="17.55" r="0.62" fill="#FFFFFF" stroke="none" />
-                    <!-- Pipi chibi -->
                     <ellipse cx="13" cy="20.5" rx="1.5" ry="0.85" fill="#7E9E8A" fill-opacity="0.55" stroke="none" />
                     <ellipse cx="23" cy="20.5" rx="1.5" ry="0.85" fill="#7E9E8A" fill-opacity="0.55" stroke="none" />
-                    <!-- Senyum chibi ceria -->
                     <path d="M16.2 21.2C17.1 22.2 18.9 22.2 19.8 21.2" />
-                    <!-- Baju koko chibi -->
                     <path d="M8 31C9.2 26.8 13.1 25.5 18 25.5C22.9 25.5 26.8 26.8 28 31" />
                 </svg>
             </div>`;
@@ -1445,7 +1454,6 @@
             }
 
             const haidSet = new Set(dates);
-            // Hitung hari beruntun khusus berdasarkan data haid milik profil ini saja
             let anchorDate = isTodayHaid ? new Date(today) : parseDateKey(dates[dates.length - 1]);
             let consecutiveDays = 0;
             let cursor = new Date(anchorDate);
@@ -1458,7 +1466,6 @@
             const hphtKey = dates[dates.length - 1];
             const hphtDate = parseDateKey(hphtKey);
 
-            // Hitung 3 siklus haid berikutnya khusus untuk profil ini
             const fertileSet = new Set();
             const predictedSet = new Set();
             const threeMonthCycles = [];
@@ -1690,7 +1697,6 @@
                     </button>
                 </div>
 
-                <!-- Ringkasan Masa Subur & Deteksi Istihadhah -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card">
                         <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-pastel-sageLight text-pastel-sageDark mb-1.5">Masa Subur &amp; Siklus</span>
@@ -1713,7 +1719,6 @@
                     </div>
                 </div>
 
-                <!-- Estimasi Haid 3 Bulan Ke Depan -->
                 <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card space-y-3">
                     <div class="flex items-center justify-between gap-2">
                         <h3 class="text-sm sm:text-base font-extrabold text-pastel-ink">Estimasi Haid &amp; Masa Subur (3 Bulan Ke Depan)</h3>
@@ -1729,7 +1734,6 @@
                     </div>
                 </div>
 
-                <!-- Kalender Tunggal Menstruasi -->
                 <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-6 border border-pastel-warm shadow-card space-y-4">
                     <div class="flex items-center justify-between gap-2">
                         <button onclick="changeMensMonthOffset(-1)" class="w-9 h-9 rounded-2xl bg-pastel-cream border border-pastel-warm font-extrabold text-pastel-ink hover:bg-pastel-warm cursor-pointer">←</button>
@@ -1754,7 +1758,6 @@
                     </div>
                 </div>
 
-                <!-- Catat / Ubah Tanggal Haid Manual -->
                 <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card">
                     <h3 class="text-sm sm:text-base font-extrabold text-pastel-ink">Catat / Ubah Tanggal Haid</h3>
                     <p class="text-xs text-pastel-muted mt-0.5 mb-3">Pilih tanggal untuk menandai atau menghapus catatan Libur Sholat</p>
@@ -1767,7 +1770,6 @@
                     </div>
                 </div>
 
-                <!-- Edukasi Istihadhah -->
                 <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card space-y-2.5">
                     <h3 class="text-sm sm:text-base font-extrabold text-pastel-ink">Info Istihadhah: Mulai Kapan &amp; Ciri-Cirinya</h3>
                     <div class="space-y-2 text-xs sm:text-sm text-pastel-muted leading-relaxed">
@@ -1902,7 +1904,6 @@
             document.getElementById('iman-status-title').textContent = imanScore >= 80 ? 'MasyaAllah, Istiqamah!' : imanScore >= 40 ? 'Terus Jaga Ritme Baik' : 'Awal Langkah Baik';
             document.getElementById('iman-status-desc').textContent = isLiburSholat ? 'Tetap berzikir, berdoa & menjaga amalan harian.' : 'Gabungan capaian sholat wajib & amalan sunnah hari ini.';
 
-            // Riwayat 7 hari terakhir
             const histContainer = document.getElementById('history-7-days');
             const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
             const cards7 = [];
@@ -1922,7 +1923,6 @@
             }
             histContainer.innerHTML = cards7.join('');
 
-            // Hijriah & Ramadhan Countdown
             const hijri = getHijriInfo(today);
             const sunnahInfo = getSunnahDayInfo(today, hijri);
             document.getElementById('header-hijri-badge').textContent = hijri.full;
@@ -2128,7 +2128,6 @@
             return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
         }
 
-        // Perhitungan posisi matahari & waktu sholat berbasis koordinat & zona waktu (GMT+7/+8/+9)
         function computeDailyPrayerSchedule(dateObj, loc) {
             const doy = getDayOfYear(dateObj);
             const gamma = ((2 * Math.PI) / 365) * (doy - 1);
@@ -2168,7 +2167,6 @@
             const asharZenith = toDeg(Math.atan(1 + Math.tan(toRad(tanDiff))));
             const haAsr = hourAngleForZenith(90 - asharZenith);
 
-            // Kalibrasi waktu sholat agar selaras dengan jadwal referensi (+2 menit)
             const subuhMin = solarNoonMin - haFajr;
             const terbitMin = solarNoonMin - haSunrise + 0.5;
             const dzuhurMin = solarNoonMin + 0.5;
@@ -2501,10 +2499,10 @@
                 let subTag = '';
                 if (sunnah.type === 'holiday') {
                     bgClass = 'bg-pastel-sageLight border-pastel-sage text-pastel-sageDark font-bold';
-                    subTag = 'Hari Raya';
+                    subTag = sunnah.shortLabel || 'Hari Raya';
                 } else if (sunnah.type === 'sunnah') {
                     bgClass = 'bg-pastel-butterLight/80 border-pastel-butter/70 text-pastel-ink';
-                    subTag = 'Sunnah';
+                    subTag = sunnah.shortLabel || 'Sunnah';
                 }
 
                 const ringClass = isSelected ? 'ring-2 ring-pastel-sageDark' : (isToday ? 'ring-2 ring-pastel-ink/40' : '');
@@ -2512,7 +2510,7 @@
                 html += `<button type="button" onclick="selectCalendarDate('${key}')" class="h-14 sm:h-16 rounded-2xl border ${bgClass} ${ringClass} p-1 flex flex-col items-center justify-center transition cursor-pointer min-w-0">
                     <span class="text-xs sm:text-sm font-extrabold leading-none">${d}</span>
                     <span class="text-[9px] font-bold text-pastel-muted mt-0.5 truncate max-w-full">${hijri.day} H</span>
-                    <span class="text-[9px] font-extrabold leading-none mt-0.5 truncate max-w-full ${sunnah.type === 'holiday' ? 'text-pastel-sageDark' : 'text-pastel-butterDark'}">${subTag}</span>
+                    <span class="text-[8px] sm:text-[9px] font-extrabold leading-tight mt-0.5 truncate max-w-full ${sunnah.type === 'holiday' ? 'text-pastel-sageDark' : 'text-pastel-butterDark'}">${subTag}</span>
                 </button>`;
             }
             grid.innerHTML = html;
