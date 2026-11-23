@@ -1,0 +1,2561 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Qalbu Tracker — Catatan Ibadah, Doa, Jadwal Sholat & Kiblat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                        arabic: ['Amiri', 'serif']
+                    },
+                    colors: {
+                        pastel: {
+                            cream: '#FDFBF7',
+                            warm: '#F3ECE0',
+                            ink: '#2F3A35',
+                            muted: '#6D7872',
+                            sage: '#7E9E8A',
+                            sageLight: '#EBF3EE',
+                            sageDark: '#4D6D59',
+                            rose: '#D98A9E',
+                            roseLight: '#FCEEF2',
+                            roseDark: '#A8586E',
+                            butter: '#E8C56B',
+                            butterLight: '#FFF8E3',
+                            butterDark: '#A67C1E',
+                            sky: '#85B3C9',
+                            skyLight: '#EAF4F9',
+                            skyDark: '#4B7990',
+                            lavender: '#A698C9',
+                            lavenderLight: '#F3EFFC',
+                            lavenderDark: '#6C5D94'
+                        }
+                    },
+                    boxShadow: {
+                        soft: '0 10px 30px -10px rgba(47, 58, 53, 0.08)',
+                        card: '0 4px 18px -6px rgba(47, 58, 53, 0.06)',
+                        '2xs': '0 1px 2px rgba(47, 58, 53, 0.05)'
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        body {
+            background-color: #FDFBF7;
+            color: #2F3A35;
+            overflow-x: hidden;
+        }
+        @keyframes lanternSway {
+            0%, 100% { transform: rotate(-4deg); }
+            50% { transform: rotate(4deg); }
+        }
+        @keyframes floatSoft {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+        }
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes sparklePop {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(0.4); }
+            100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) - 24px)) scale(1.2); }
+        }
+        .animate-lantern-sway {
+            transform-origin: top center;
+            animation: lanternSway 3.6s ease-in-out infinite;
+        }
+        .animate-float-soft {
+            animation: floatSoft 3.8s ease-in-out infinite;
+        }
+        .animate-fade-slide {
+            animation: fadeSlide 0.28s ease-out;
+        }
+        .sparkle-dot {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            font-size: 14px;
+            animation: sparklePop 0.75s ease-out forwards;
+        }
+        .islamic-star-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .islamic-star-divider::before,
+        .islamic-star-divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(77, 109, 89, 0.35), transparent);
+        }
+        .muslim-frame-card {
+            position: relative;
+            background-image:
+                radial-gradient(circle at 100% 0%, rgba(232, 197, 107, 0.22) 0, transparent 36%),
+                radial-gradient(circle at 0% 100%, rgba(126, 158, 138, 0.16) 0, transparent 38%);
+        }
+        .interactive-card {
+            transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease;
+        }
+        @media (hover: hover) {
+            .interactive-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 12px 26px -8px rgba(47, 58, 53, 0.11);
+            }
+        }
+        .interactive-card:active {
+            transform: scale(0.99);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-24 sm:pb-28 selection:bg-pastel-sageLight selection:text-pastel-sageDark">
+    <!-- Toast / Notifikasi Melayang -->
+    <div id="toast-banner" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-pastel-ink text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-full shadow-lg border border-white/15">
+        <span id="toast-message">Tersimpan!</span>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-3.5 sm:px-6 pt-4 sm:pt-7">
+        <!-- ================================================================= -->
+        <!-- HALAMAN MASUK / PEMILIHAN PROFIL                                  -->
+        <!-- ================================================================= -->
+        <section id="auth-screen" class="space-y-5 animate-fade-slide">
+            <div class="text-center space-y-2 pt-2">
+                <div class="flex items-center justify-center gap-3 sm:gap-5">
+                    <!-- Lentera Kiri -->
+                    <div onclick="triggerMascotCheer(this)" title="Lentera Cahaya" class="w-10 h-12 sm:w-11 sm:h-14 text-pastel-butterDark animate-lantern-sway cursor-pointer select-none">
+                        <svg viewBox="0 0 48 56" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="24" y1="2" x2="24" y2="8" />
+                            <circle cx="24" cy="9.5" r="2" />
+                            <path d="M14 16L24 11L34 16H14Z" fill="currentColor" fill-opacity="0.16" />
+                            <path d="M15 16L12 28L16 44H32L36 28L33 16H15Z" fill="currentColor" fill-opacity="0.08" />
+                            <line x1="24" y1="16" x2="24" y2="44" />
+                            <circle cx="24" cy="29" r="3.5" fill="currentColor" fill-opacity="0.35" />
+                            <path d="M14 44H34L24 52L14 44Z" fill="currentColor" fill-opacity="0.18" />
+                        </svg>
+                    </div>
+
+                    <!-- Bulan Sabit & Ketupat Tengah -->
+                    <div onclick="triggerMascotCheer(this)" class="w-14 h-14 sm:w-16 sm:h-16 rounded-3xl bg-gradient-to-br from-pastel-sageLight via-pastel-butterLight to-pastel-roseLight border border-pastel-warm shadow-card flex items-center justify-center animate-float-soft cursor-pointer select-none">
+                        <svg class="w-8 h-8 text-pastel-sageDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                            <path d="M19 3v4" />
+                            <path d="M21 5h-4" />
+                        </svg>
+                    </div>
+
+                    <!-- Ketupat Kanan -->
+                    <div onclick="triggerMascotCheer(this)" title="Ketupat Silaturahmi" class="w-10 h-12 sm:w-11 sm:h-14 text-pastel-sageDark animate-lantern-sway cursor-pointer select-none flex items-center justify-center">
+                        <svg class="w-10 h-10" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M24 6C21 2 16 2 14 5" />
+                            <polygon points="24 8 40 24 24 40 8 24" fill="currentColor" fill-opacity="0.12" />
+                            <line x1="16" y1="16" x2="32" y2="32" />
+                            <line x1="32" y1="16" x2="16" y2="32" />
+                            <polygon points="24 16 32 24 24 32 16 24" />
+                        </svg>
+                    </div>
+                </div>
+
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-pastel-ink">Qalbu Tracker</h1>
+                <p class="text-xs sm:text-sm text-pastel-muted mt-1 max-w-md mx-auto">
+                    Catatan ibadah harian, jadwal waktu sholat &amp; kumpulan doa bernuansa Islami pastel
+                </p>
+            </div>
+
+            <div id="profile-selection-view" class="bg-white/95 muslim-frame-card backdrop-blur-sm border border-pastel-warm rounded-3xl p-4 sm:p-7 shadow-soft">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-pastel-ink">Pilih Profil Kamu</h2>
+                        <p class="text-xs text-pastel-muted">Setiap profil menyimpan catatan ibadah &amp; preferensi sendiri</p>
+                    </div>
+                    <button onclick="openAddProfileModal()" class="inline-flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-2xl bg-pastel-sageLight text-pastel-sageDark hover:bg-pastel-sage hover:text-white transition cursor-pointer">
+                        <span>+ Profil Baru</span>
+                    </button>
+                </div>
+                <div id="profile-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
+            </div>
+
+            <div id="pin-entry-view" class="hidden bg-white muslim-frame-card border border-pastel-warm rounded-3xl p-5 sm:p-7 shadow-soft max-w-md mx-auto">
+                <button onclick="backToProfiles()" class="text-xs font-bold text-pastel-muted hover:text-pastel-ink mb-4 inline-flex items-center gap-1 cursor-pointer">
+                    <span>← Ganti Profil</span>
+                </button>
+                <div class="flex items-center gap-3.5 mb-5">
+                    <div id="selected-profile-avatar" class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"></div>
+                    <div>
+                        <p class="text-xs text-pastel-muted">Masuk sebagai</p>
+                        <h3 id="selected-profile-name" class="text-lg font-extrabold text-pastel-ink">Nama</h3>
+                    </div>
+                </div>
+                <label class="block text-xs font-bold text-pastel-muted mb-2">Masukkan PIN (4 digit)</label>
+                <input id="pin-input" type="password" inputmode="numeric" maxlength="4" placeholder="••••"
+                    class="w-full text-center tracking-[0.6em] text-xl font-extrabold py-3 px-4 rounded-2xl border border-pastel-warm bg-pastel-cream focus:outline-none focus:border-pastel-sage mb-3" />
+                <div id="pin-keypad" class="grid grid-cols-3 gap-2 mb-3">
+                    <button type="button" onclick="appendPinDigit('1')" class="py-2.5 rounded-2xl bg-pastel-cream hover:bg-pastel-warm border border-pastel-warm text-base font-extrabold text-pastel-ink transition cursor-pointer">1</button>
+                    <button type="button" onclick="appendPinDigit('2')" class="py-2.5 rounded-2xl bg-pastel-cream hover:bg-pastel-warm border border-pastel-warm text-base font-extrabold text-pastel-ink transition cursor-pointer">2</button>
+                    <button type="button" onclick="appendPinDigit('3')" class="py-2.5 rounded-2xl bg-pastel-cream hover:bg-pastel-warm border border-pastel-warm text-base font-extrabold text-pastel-ink transition cursor-pointer">3</button>
+                    <button type="button" onclick="appendPinDigit('4')" class="py-2.5 rounded-2xl bg-pastel-cream hover:bg-pastel-warm border border-pastel-warm text-base font-extrabold text-pastel-ink transition cursor-pointer">4</button>
+                    <button type="button" onclick="appendPinDigit('5')" class="py-2.5 rounded-2xl bg-pastel-cream hover:bg-pastel-warm border border-pastel-warm text-base font-extrabold text-pastel-ink transition cursor-pointer">5</button>
+                    <button type="button" onclick="appendPinDigit('6')" class="py-2.5 rounded-2xl bg-pastel-cream hover:bg-pastel-warm border border-pastel-warm text-base font-extrabold text-pastel-ink transition cursor-pointer">6</button>
+                    <button type="button" onclick="appendPinDigit('7')" class="py-2.5 rounded-2xl bg-pastel-cream hover:bg-pastel-warm border border-pastel-warm text-base font-extrabold text-pastel-ink transition cursor-pointer">7</button>
+                    <button type="button" onclick="appendPinDigit('8')" class="py-2.5 rounded-2xl bg-pastel-cream hover:bg-pastel-warm border border-pastel-warm text-base font-extrabold text-pastel-ink transition cursor-pointer">8</button>
+                    <button type="button" onclick="appendPinDigit('9')" class="py-2.5 rounded-2xl bg-pastel-cream hover:bg-pastel-warm border border-pastel-warm text-base font-extrabold text-pastel-ink transition cursor-pointer">9</button>
+                    <button type="button" onclick="clearPinInput()" class="py-2.5 rounded-2xl bg-white hover:bg-pastel-roseLight/60 border border-pastel-warm text-xs font-extrabold text-pastel-roseDark transition cursor-pointer">Hapus</button>
+                    <button type="button" onclick="appendPinDigit('0')" class="py-2.5 rounded-2xl bg-pastel-cream hover:bg-pastel-warm border border-pastel-warm text-base font-extrabold text-pastel-ink transition cursor-pointer">0</button>
+                    <button type="button" onclick="backspacePinDigit()" class="py-2.5 rounded-2xl bg-white hover:bg-pastel-warm border border-pastel-warm text-xs font-extrabold text-pastel-muted hover:text-pastel-ink transition cursor-pointer">←</button>
+                </div>
+                <p id="pin-error-msg" class="hidden text-xs font-semibold text-pastel-roseDark text-center mb-3">PIN salah. Silakan coba lagi.</p>
+                <button onclick="submitPin()" class="w-full py-3 rounded-2xl bg-pastel-sage text-white font-bold text-sm hover:bg-pastel-sageDark transition shadow-2xs cursor-pointer">
+                    Masuk ke Dashboard
+                </button>
+            </div>
+
+            <div id="add-profile-view" class="hidden bg-white muslim-frame-card border border-pastel-warm rounded-3xl p-5 sm:p-7 shadow-soft max-w-md mx-auto space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-extrabold text-pastel-ink">Buat Profil Baru</h3>
+                    <button onclick="closeAddProfileModal()" class="text-xs font-bold text-pastel-muted hover:text-pastel-ink cursor-pointer">Batal</button>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-pastel-muted mb-1.5">Nama Panggilan</label>
+                    <input id="new-profile-name" type="text" placeholder="Contoh: Nisa atau Fahri"
+                        class="w-full px-4 py-2.5 rounded-2xl border border-pastel-warm bg-pastel-cream text-sm font-semibold focus:outline-none focus:border-pastel-sage" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-pastel-muted mb-1.5">Kategori Profil</label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button type="button" id="cat-btn-muslimah" onclick="selectNewProfileCategory('muslimah')" class="py-2.5 px-3 rounded-2xl border-2 border-pastel-rose bg-pastel-roseLight text-pastel-roseDark text-xs font-extrabold cursor-pointer">
+                            Muslimah (Ada Tracker Haid)
+                        </button>
+                        <button type="button" id="cat-btn-general" onclick="selectNewProfileCategory('general')" class="py-2.5 px-3 rounded-2xl border border-pastel-warm bg-white text-pastel-muted text-xs font-bold cursor-pointer">
+                            Umum / Ikhwan
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-pastel-muted mb-1.5">PIN 4 Digit</label>
+                    <input id="new-profile-pin" type="password" inputmode="numeric" maxlength="4" placeholder="1234"
+                        class="w-full px-4 py-2.5 rounded-2xl border border-pastel-warm bg-pastel-cream text-sm font-bold focus:outline-none focus:border-pastel-sage" />
+                </div>
+                <button onclick="createNewProfile()" class="w-full py-3 rounded-2xl bg-pastel-sage text-white font-bold text-sm hover:bg-pastel-sageDark transition cursor-pointer">
+                    Simpan Profil
+                </button>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- APLIKASI UTAMA (SETELAH LOGIN)                                    -->
+        <!-- ================================================================= -->
+        <div id="main-app-shell" class="hidden space-y-4 sm:space-y-5">
+            <!-- Header Profil & Streak -->
+            <header id="top-profile-header" class="bg-white muslim-frame-card border border-pastel-warm rounded-3xl p-4 sm:p-5 shadow-card flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div id="header-avatar" onclick="triggerMascotCheer(this)" class="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 cursor-pointer animate-float-soft"></div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-[11px] font-semibold text-pastel-muted">Assalamu'alaikum,</span>
+                            <span id="header-category-badge" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-pastel-roseLight text-pastel-roseDark">Muslimah</span>
+                            <span id="header-hijri-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pastel-skyLight text-pastel-skyDark">12 Jumadil Awal 1448 H</span>
+                        </div>
+                        <h1 id="header-user-name" class="text-base sm:text-xl font-extrabold text-pastel-ink truncate">Anissa</h1>
+                        <p id="header-gregorian-date" class="text-[11px] text-pastel-muted">Senin, 23 November 2026</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-2 rounded-2xl bg-pastel-butterLight/80 text-pastel-butterDark border border-pastel-butter/30" title="Lentera & Ketupat">
+                        <svg class="w-4 h-4 animate-lantern-sway" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"/><path d="M8 7h8l2 4v6l-2 3H8l-2-3v-6l2-4z"/><circle cx="12" cy="14" r="1.5" fill="currentColor"/></svg>
+                        <svg class="w-4 h-4 text-pastel-sageDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 3 21 12 12 21 3 12"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/><line x1="15.5" y1="8.5" x2="8.5" y2="15.5"/></svg>
+                    </div>
+                    <div class="flex items-center gap-1.5 bg-pastel-butterLight text-pastel-butterDark px-3 py-2 rounded-2xl text-xs font-extrabold">
+                        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C9.5 6.2 6 8.8 6 13.5a6 6 0 0 0 12 0c0-2.6-1.2-4.7-2.6-6.4-.3 1.4-1.3 2.2-2.4 2.2-.2-2.8.4-5.2-1-7.3z" />
+                        </svg>
+                        <span id="header-streak-count">0</span>
+                        <span class="hidden sm:inline">hari</span>
+                    </div>
+                    <button onclick="logoutProfile()" class="text-xs font-bold px-3 py-2 rounded-2xl bg-pastel-cream hover:bg-pastel-warm text-pastel-muted hover:text-pastel-ink transition border border-pastel-warm cursor-pointer">
+                        Keluar
+                    </button>
+                </div>
+            </header>
+
+            <!-- =============================================================== -->
+            <!-- TAB 1: DASHBOARD BERANDA & TRACKER SHOLAT                        -->
+            <!-- =============================================================== -->
+            <main id="tab-beranda" class="space-y-4 sm:space-y-5 animate-fade-slide">
+                <!-- Slot Kartu Status Haid / Menstruasi (Khusus Muslimah) -->
+                <div id="haid-dashboard-slot"></div>
+
+                <!-- Kartu Menuju Waktu Sholat (Hitung Mundur Real-Time) -->
+                <div class="bg-gradient-to-br from-pastel-sage to-pastel-sageDark text-white rounded-3xl p-4 sm:p-6 shadow-soft interactive-card relative overflow-hidden">
+                    <div class="pointer-events-none absolute right-4 top-3 opacity-20 flex items-center gap-2">
+                        <svg class="w-8 h-8 animate-lantern-sway" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"/><path d="M8 7h8l2 4v6l-2 3H8l-2-3v-6l2-4z"/><circle cx="12" cy="14" r="1.5" fill="currentColor"/></svg>
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 3 21 12 12 21 3 12"/></svg>
+                    </div>
+                    <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="min-w-0">
+                            <div class="inline-flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/15 text-white mb-1.5">
+                                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                                <span>Menuju Waktu Sholat</span>
+                            </div>
+                            <h2 id="dash-next-prayer-name" class="text-xl sm:text-2xl font-extrabold tracking-tight">Maghrib</h2>
+                            <p id="dash-next-prayer-sub" class="text-xs sm:text-sm text-white/90 mt-0.5 truncate">Pukul 17:46 WIB • Bekasi &amp; Sekitarnya</p>
+                        </div>
+                        <div class="bg-white/15 backdrop-blur-xs border border-white/20 rounded-2xl px-4 py-2.5 text-left sm:text-right shrink-0">
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-white/80">Hitung Mundur</p>
+                            <p id="dash-prayer-countdown" class="text-xl sm:text-2xl font-extrabold tabular-nums tracking-tight">00:00:00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KARTU KALENDER ISLAM (HIJRIAH) HARI INI -->
+                <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card interactive-card">
+                    <div class="flex items-center justify-between gap-3 mb-2">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="w-9 h-9 rounded-2xl bg-pastel-skyLight text-pastel-skyDark flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/><path d="M19 3v4"/><path d="M21 5h-4"/></svg>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-extrabold uppercase tracking-wider text-pastel-skyDark">Kalender Islam • Hijriah</p>
+                                <h3 id="islamic-cal-hijri-full" class="text-sm sm:text-base font-extrabold text-pastel-ink truncate">12 Jumadil Awal 1448 H</h3>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <span class="hidden sm:inline-flex items-center justify-center w-7 h-7 rounded-xl bg-pastel-butterLight text-pastel-butterDark" title="Lentera">
+                                <svg class="w-4 h-4 animate-lantern-sway" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"/><path d="M8 7h8l2 4v6l-2 3H8l-2-3v-6l2-4z"/><circle cx="12" cy="14" r="1.5" fill="currentColor"/></svg>
+                            </span>
+                            <span id="islamic-cal-sunnah-badge" class="text-[10px] font-bold px-2.5 py-1 rounded-full bg-pastel-sageLight text-pastel-sageDark shrink-0">Hari Biasa</span>
+                        </div>
+                    </div>
+                    <div class="islamic-star-divider my-2 text-pastel-sageDark/70">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 3 21 12 12 21 3 12"/></svg>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-pastel-muted">
+                        <span id="islamic-cal-masehi-sub">Masehi: Senin, 23 November 2026</span>
+                        <span id="islamic-cal-sunnah-note" class="font-semibold text-pastel-sageDark">Catatan sunnah hari ini</span>
+                    </div>
+                </div>
+
+                <!-- TRACKER DASHBOARD IMAN CIRCLE + COUNTDOWN PUASA RAMADHAN -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card interactive-card flex items-center gap-4">
+                        <div class="relative w-24 h-24 sm:w-28 sm:h-28 shrink-0 flex items-center justify-center">
+                            <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="#F3ECE0" stroke-width="10" />
+                                <circle id="iman-circle-progress" cx="50" cy="50" r="40" fill="none" stroke="#7E9E8A" stroke-width="10" stroke-linecap="round"
+                                    stroke-dasharray="251.2" stroke-dashoffset="251.2" class="transition-all duration-500" />
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                <span id="iman-circle-percent" class="text-lg sm:text-xl font-extrabold text-pastel-ink">0%</span>
+                                <span class="text-[9px] font-extrabold uppercase tracking-wider text-pastel-muted">IMAN</span>
+                            </div>
+                        </div>
+                        <div class="min-w-0">
+                            <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-pastel-sageLight text-pastel-sageDark mb-1">Dashboard Iman</span>
+                            <h3 id="iman-status-title" class="text-sm sm:text-base font-extrabold text-pastel-ink">Awal Langkah Baik</h3>
+                            <p id="iman-status-desc" class="text-xs text-pastel-muted mt-0.5">Tandai sholat wajib &amp; amalan sunnah hari ini.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-pastel-lavenderLight via-pastel-butterLight/60 to-pastel-sageLight muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card interactive-card flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                                <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/90 text-pastel-lavenderDark border border-pastel-warm">Countdown Puasa</span>
+                                <svg class="w-4 h-4 text-pastel-butterDark shrink-0 animate-lantern-sway" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="Lentera Ramadhan">
+                                    <path d="M12 2v2"/><path d="M8 7h8l2 4v6l-2 3H8l-2-3v-6l2-4z"/><circle cx="12" cy="14" r="1.5" fill="currentColor"/>
+                                </svg>
+                                <svg class="w-4 h-4 text-pastel-sageDark shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" title="Ketupat Ramadhan & Idul Fitri">
+                                    <polygon points="12 3 21 12 12 21 3 12"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/><line x1="15.5" y1="8.5" x2="8.5" y2="15.5"/>
+                                </svg>
+                            </div>
+                            <h3 id="ramadhan-countdown-title" class="text-base sm:text-lg font-extrabold text-pastel-ink leading-snug">Menuju Ramadhan</h3>
+                            <p id="ramadhan-countdown-sub" class="text-xs text-pastel-muted mt-0.5">Perkiraan awal puasa: 8 Februari 2027</p>
+                        </div>
+                        <div class="bg-white/90 border border-pastel-warm rounded-2xl px-3.5 py-2.5 text-center shrink-0">
+                            <span id="ramadhan-countdown-days" class="block text-xl sm:text-2xl font-extrabold text-pastel-lavenderDark">-</span>
+                            <span class="text-[10px] font-bold uppercase text-pastel-muted">Hari Lagi</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KARTU MUTIARA HADITS AUTO-REFRESH -->
+                <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card interactive-card relative overflow-hidden">
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-xl bg-pastel-butterLight text-pastel-butterDark flex items-center justify-center shrink-0">
+                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                            </span>
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-pastel-butterDark">Mutiara Hadits • Bulan &amp; Hikmah</span>
+                        </div>
+                        <div id="hadith-dots" class="flex items-center gap-1"></div>
+                    </div>
+                    <p id="hadith-quote-text" class="text-sm sm:text-base font-bold text-pastel-ink leading-relaxed"></p>
+                    <p id="hadith-quote-source" class="text-xs font-semibold text-pastel-muted mt-1.5"></p>
+                </div>
+
+                <!-- Progress Sholat Wajib Hari Ini -->
+                <div id="sholat-summary-banner" class="rounded-3xl p-4 sm:p-6 text-white shadow-soft interactive-card relative overflow-hidden transition-colors">
+                    <div class="pointer-events-none absolute right-4 bottom-3 opacity-20 flex items-center gap-2">
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 3 21 12 12 21 3 12"/><line x1="8" y1="8" x2="16" y2="16"/><line x1="16" y1="8" x2="8" y2="16"/></svg>
+                    </div>
+                    <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <p id="sholat-banner-kicker" class="text-[11px] font-bold uppercase tracking-wider opacity-90">Progress Sholat Wajib Hari Ini</p>
+                            <div class="flex items-baseline gap-2.5 mt-1">
+                                <span id="sholat-done-count" class="text-3xl sm:text-4xl font-extrabold">0/5</span>
+                                <span id="sholat-banner-sub" class="text-xs sm:text-sm font-medium opacity-95">Mulai catat sholat wajibmu hari ini</span>
+                            </div>
+                        </div>
+                        <div class="w-full sm:w-52">
+                            <div class="flex justify-between text-[11px] font-bold mb-1.5">
+                                <span>Capaian</span>
+                                <span id="sholat-percent-label">0%</span>
+                            </div>
+                            <div class="w-full h-3 rounded-full bg-black/15 overflow-hidden">
+                                <div id="sholat-progress-bar" class="h-full bg-white rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid 5 Sholat Wajib -->
+                <section class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-6 border border-pastel-warm shadow-card">
+                    <div class="flex items-center justify-between mb-3.5">
+                        <h2 class="text-sm sm:text-base font-extrabold text-pastel-ink">Sholat Wajib 5 Waktu</h2>
+                        <span class="text-[11px] font-semibold text-pastel-muted">Ketuk kartu untuk menandai</span>
+                    </div>
+                    <div id="wajib-sholat-list" class="grid grid-cols-1 sm:grid-cols-5 gap-2.5 sm:gap-3"></div>
+                </section>
+
+                <!-- Amalan Sunnah & Tantangan Harian -->
+                <section class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-6 border border-pastel-warm shadow-card">
+                    <div class="flex items-center justify-between mb-3.5">
+                        <div>
+                            <h2 class="text-sm sm:text-base font-extrabold text-pastel-ink">Amalan Sunnah &amp; Tantangan Harian</h2>
+                            <p class="text-xs text-pastel-muted">Tambah poin kebaikan &amp; jaga streak harianmu</p>
+                        </div>
+                        <span id="sunnah-counter-badge" class="text-xs font-extrabold px-3 py-1 rounded-full bg-pastel-butterLight text-pastel-butterDark">0/4 Selesai</span>
+                    </div>
+                    <div id="sunnah-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+                </section>
+
+                <!-- Riwayat 7 Hari Terakhir -->
+                <section class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-6 border border-pastel-warm shadow-card">
+                    <div class="flex items-center justify-between mb-3.5">
+                        <h2 class="text-sm sm:text-base font-extrabold text-pastel-ink">Riwayat 7 Hari Terakhir</h2>
+                        <span class="text-[11px] font-semibold text-pastel-muted">Ringkasan sholat &amp; status</span>
+                    </div>
+                    <div id="history-7-days" class="grid grid-cols-7 gap-1.5 sm:gap-2 text-center"></div>
+                </section>
+            </main>
+
+            <!-- =============================================================== -->
+            <!-- TAB 2: KUMPULAN DOA HARIAN & WAJIB                               -->
+            <!-- =============================================================== -->
+            <main id="tab-doa" class="hidden space-y-4 sm:space-y-5 animate-fade-slide">
+                <div class="bg-gradient-to-r from-pastel-lavenderLight via-pastel-roseLight/60 to-pastel-sageLight muslim-frame-card rounded-3xl p-4 sm:p-6 border border-pastel-warm flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg sm:text-2xl font-extrabold text-pastel-ink">Doa Harian &amp; Doa Wajib</h2>
+                        <p class="text-xs sm:text-sm text-pastel-muted mt-0.5">Bacaan doa sehari-hari beserta teks Arab, latin, dan artinya</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <div class="hidden sm:flex w-11 h-11 rounded-2xl bg-white/80 items-center justify-center text-pastel-butterDark">
+                            <svg class="w-6 h-6 animate-lantern-sway" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"/><path d="M8 7h8l2 4v6l-2 3H8l-2-3v-6l2-4z"/><circle cx="12" cy="14" r="1.5" fill="currentColor"/></svg>
+                        </div>
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/85 flex items-center justify-center shadow-2xs shrink-0">
+                            <svg class="w-7 h-7 text-pastel-lavenderDark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                                <path d="M12 7v6"></path>
+                                <path d="M9.5 9.5h5"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search & Filter Kategori -->
+                <div class="bg-white muslim-frame-card rounded-3xl p-4 border border-pastel-warm shadow-card space-y-3">
+                    <input id="doa-search-input" type="text" oninput="onDoaSearchInput(this.value)" placeholder="Cari doa (misal: tidur, makan, safar, wudhu, ayat kursi, al kahfi)..."
+                        class="w-full px-4 py-2.5 rounded-2xl border border-pastel-warm bg-pastel-cream text-sm focus:outline-none focus:border-pastel-lavender" />
+                    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                        <button onclick="setDoaFilterCategory('Semua')" id="doa-cat-Semua" class="doa-cat-btn px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-pastel-lavender text-white shrink-0 cursor-pointer">Semua</button>
+                        <button onclick="setDoaFilterCategory('Wajib & Harian')" id="doa-cat-Wajib & Harian" class="doa-cat-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-pastel-cream text-pastel-muted hover:text-pastel-ink shrink-0 cursor-pointer">Wajib &amp; Harian</button>
+                        <button onclick="setDoaFilterCategory('Pagi & Petang')" id="doa-cat-Pagi & Petang" class="doa-cat-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-pastel-cream text-pastel-muted hover:text-pastel-ink shrink-0 cursor-pointer">Pagi &amp; Petang</button>
+                        <button onclick="setDoaFilterCategory('Perlindungan')" id="doa-cat-Perlindungan" class="doa-cat-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-pastel-cream text-pastel-muted hover:text-pastel-ink shrink-0 cursor-pointer">Perlindungan</button>
+                        <button onclick="setDoaFilterCategory('Aktivitas')" id="doa-cat-Aktivitas" class="doa-cat-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-pastel-cream text-pastel-muted hover:text-pastel-ink shrink-0 cursor-pointer">Aktivitas</button>
+                        <button onclick="setDoaFilterCategory('Favorit')" id="doa-cat-Favorit" class="doa-cat-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-pastel-cream text-pastel-muted hover:text-pastel-ink shrink-0 cursor-pointer">Favorit</button>
+                    </div>
+                </div>
+
+                <!-- Navigasi Kartu Doa -->
+                <div class="flex items-center justify-between gap-2 px-1">
+                    <button onclick="prevDoaCard()" class="px-3.5 py-2 rounded-2xl bg-white border border-pastel-warm text-xs font-extrabold text-pastel-ink hover:bg-pastel-cream transition cursor-pointer">
+                        ← Doa Sebelumnya
+                    </button>
+                    <span id="doa-card-counter" class="text-xs font-bold text-pastel-muted">1 / 1</span>
+                    <button onclick="nextDoaCard()" class="px-3.5 py-2 rounded-2xl bg-white border border-pastel-warm text-xs font-extrabold text-pastel-ink hover:bg-pastel-cream transition cursor-pointer">
+                        Doa Berikutnya →
+                    </button>
+                </div>
+
+                <!-- Daftar Kartu Doa -->
+                <div id="doa-cards-container" class="space-y-3.5"></div>
+            </main>
+
+            <!-- =============================================================== -->
+            <!-- TAB 3: JADWAL WAKTU SHOLAT                                      -->
+            <!-- =============================================================== -->
+            <main id="tab-jadwal" class="hidden space-y-4 sm:space-y-5 animate-fade-slide">
+                <div class="bg-gradient-to-br from-pastel-sage to-pastel-sageDark text-white rounded-3xl p-5 sm:p-6 shadow-soft relative overflow-hidden">
+                    <div class="pointer-events-none absolute right-5 top-3 opacity-20 flex items-center gap-2.5">
+                        <svg class="w-8 h-8 animate-lantern-sway" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"/><path d="M8 7h8l2 4v6l-2 3H8l-2-3v-6l2-4z"/><circle cx="12" cy="14" r="1.5" fill="currentColor"/></svg>
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                        <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 3 21 12 12 21 3 12"/></svg>
+                    </div>
+                    <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/15 text-white mb-1.5">Waktu Sholat Berikutnya</span>
+                            <h2 id="jadwal-next-name" class="text-2xl sm:text-3xl font-extrabold">Maghrib</h2>
+                            <p id="jadwal-next-detail" class="text-xs sm:text-sm text-white/90 mt-0.5">Pukul 17:46 • Bekasi &amp; Sekitarnya</p>
+                        </div>
+                        <div class="bg-white/15 backdrop-blur-xs border border-white/20 rounded-2xl px-4 py-3 text-left sm:text-right shrink-0">
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-white/80">Hitung Mundur</p>
+                            <p id="jadwal-countdown" class="text-2xl font-extrabold tabular-nums">00:00:00</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pilihan Kota & Lokasi GPS -->
+                <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-sm sm:text-base font-extrabold text-pastel-ink">Pilih Wilayah / Kota</h3>
+                            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-pastel-sageLight text-pastel-sageDark">Realtime</span>
+                        </div>
+                        <p id="jadwal-city-subtitle" class="text-xs text-pastel-muted mt-0.5 truncate">Bekasi &amp; Sekitarnya • Zona GMT+07:00</p>
+                    </div>
+                    <div class="flex items-center gap-2 shrink-0">
+                        <select id="jadwal-city-select" onchange="onChangePrayerCity(this.value)"
+                            class="px-3.5 py-2.5 rounded-2xl border border-pastel-warm bg-pastel-cream text-xs sm:text-sm font-bold text-pastel-ink focus:outline-none focus:border-pastel-sage cursor-pointer">
+                            <option value="bekasi">Bekasi &amp; Sekitarnya (GMT+07:00)</option>
+                            <option value="jakarta">DKI Jakarta (GMT+07:00)</option>
+                            <option value="bandung">Bandung (GMT+07:00)</option>
+                            <option value="bogor">Bogor &amp; Depok (GMT+07:00)</option>
+                            <option value="semarang">Semarang (GMT+07:00)</option>
+                            <option value="yogyakarta">Yogyakarta (GMT+07:00)</option>
+                            <option value="surabaya">Surabaya (GMT+07:00)</option>
+                            <option value="malang">Malang (GMT+07:00)</option>
+                            <option value="medan">Medan (GMT+07:00)</option>
+                            <option value="palembang">Palembang (GMT+07:00)</option>
+                            <option value="padang">Padang (GMT+07:00)</option>
+                            <option value="denpasar">Denpasar / Bali (GMT+08:00)</option>
+                            <option value="makassar">Makassar (GMT+08:00)</option>
+                            <option value="balikpapan">Balikpapan (GMT+08:00)</option>
+                            <option value="banjarmasin">Banjarmasin (GMT+08:00)</option>
+                            <option value="manado">Manado (GMT+08:00)</option>
+                            <option value="ambon">Ambon (GMT+09:00)</option>
+                            <option value="jayapura">Jayapura (GMT+09:00)</option>
+                        </select>
+                        <button onclick="useGpsForPrayerSchedule()" class="px-3.5 py-2.5 rounded-2xl bg-pastel-skyLight text-pastel-skyDark hover:bg-pastel-sky hover:text-white text-xs font-extrabold transition cursor-pointer shrink-0">
+                            📍 GPS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mode Hari Ini / 30 Hari & Strip 6 Waktu Sholat -->
+                <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="inline-flex rounded-2xl bg-pastel-cream p-1 border border-pastel-warm">
+                            <button id="jadwal-mode-today" onclick="setScheduleViewMode('today')" class="px-4 py-1.5 rounded-xl text-xs font-extrabold bg-pastel-sage text-white cursor-pointer">Hari Ini</button>
+                            <button id="jadwal-mode-30days" onclick="setScheduleViewMode('30days')" class="px-4 py-1.5 rounded-xl text-xs font-bold text-pastel-muted hover:text-pastel-ink cursor-pointer">30 Hari</button>
+                        </div>
+                        <span id="jadwal-date-label" class="text-xs font-bold text-pastel-muted">Senin, 23 November 2026 • GMT+07:00</span>
+                    </div>
+
+                    <div id="jadwal-today-panel" class="space-y-4">
+                        <div id="jadwal-6-slots" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5"></div>
+                    </div>
+
+                    <div id="jadwal-30days-panel" class="hidden overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-pastel-warm text-pastel-muted">
+                                    <th class="py-2.5 px-2.5 font-extrabold">Tanggal</th>
+                                    <th class="py-2.5 px-2 font-extrabold">Subuh</th>
+                                    <th class="py-2.5 px-2 font-extrabold">Terbit</th>
+                                    <th class="py-2.5 px-2 font-extrabold">Dzuhur</th>
+                                    <th class="py-2.5 px-2 font-extrabold">Ashar</th>
+                                    <th class="py-2.5 px-2 font-extrabold">Maghrib</th>
+                                    <th class="py-2.5 px-2 font-extrabold">Isya</th>
+                                </tr>
+                            </thead>
+                            <tbody id="jadwal-30days-tbody" class="divide-y divide-pastel-warm/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+
+            <!-- =============================================================== -->
+            <!-- TAB 3B: DASHBOARD ARAH KIBLAT                                   -->
+            <!-- =============================================================== -->
+            <main id="tab-kiblat" class="hidden space-y-4 sm:space-y-5 animate-fade-slide">
+                <div class="bg-gradient-to-r from-pastel-skyLight via-pastel-sageLight/70 to-pastel-butterLight muslim-frame-card rounded-3xl p-4 sm:p-6 border border-pastel-warm flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg sm:text-2xl font-extrabold text-pastel-ink">Arah Kiblat &amp; Kompas</h2>
+                        <p class="text-xs sm:text-sm text-pastel-muted mt-0.5">Perhitungan sudut arah menuju Ka'bah (21.4225° LU, 39.8262° BT)</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-white/90 text-pastel-sageDark flex items-center justify-center shadow-2xs shrink-0 animate-float-soft">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 3 21 12 12 21 3 12"/><circle cx="12" cy="12" r="3"/></svg>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Kompas Interaktif -->
+                    <div class="bg-white muslim-frame-card rounded-3xl p-5 sm:p-6 border border-pastel-warm shadow-card flex flex-col items-center justify-center text-center space-y-4">
+                        <div class="relative w-56 h-56 sm:w-64 sm:h-64 rounded-full border-4 border-pastel-sageLight bg-gradient-to-b from-pastel-cream to-pastel-sageLight/40 shadow-inner flex items-center justify-center">
+                            <span class="absolute top-2.5 text-xs font-extrabold text-pastel-roseDark">U</span>
+                            <span class="absolute bottom-2.5 text-xs font-extrabold text-pastel-muted">S</span>
+                            <span class="absolute left-3 text-xs font-extrabold text-pastel-muted">B</span>
+                            <span class="absolute right-3 text-xs font-extrabold text-pastel-muted">T</span>
+
+                            <!-- Jarum / Arah Kiblat yang berputar -->
+                            <div id="qibla-needle-rotator" class="w-full h-full flex items-center justify-center transition-transform duration-300" style="transform: rotate(295deg);">
+                                <div class="flex flex-col items-center -translate-y-12">
+                                    <span class="px-2 py-0.5 rounded-full bg-pastel-sageDark text-white text-[10px] font-extrabold shadow-2xs mb-1">Ka'bah</span>
+                                    <svg class="w-7 h-7 text-pastel-sageDark" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 2L17 12H7L12 2Z" />
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="absolute w-14 h-14 rounded-2xl bg-white border border-pastel-warm shadow-card flex flex-col items-center justify-center">
+                                <span id="qibla-bearing-center" class="text-sm font-extrabold text-pastel-ink">295°</span>
+                                <span class="text-[9px] font-bold text-pastel-muted">KIBLAT</span>
+                            </div>
+                        </div>
+
+                        <div class="w-full space-y-2">
+                            <div class="flex items-center justify-between text-xs font-bold text-pastel-muted">
+                                <span>Simulasi Putar Arah HP / Kompas</span>
+                                <span id="qibla-heading-label">Utara (0°)</span>
+                            </div>
+                            <input id="qibla-heading-slider" type="range" min="0" max="359" value="0" oninput="setManualCompassHeading(this.value)"
+                                class="w-full accent-pastel-sageDark cursor-pointer" />
+                            <button onclick="enableDeviceCompass()" class="w-full py-2.5 px-4 rounded-2xl bg-pastel-sageLight text-pastel-sageDark hover:bg-pastel-sage hover:text-white text-xs font-extrabold transition cursor-pointer">
+                                Aktifkan Sensor Kompas HP (Jika Didukung)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Informasi Sudut & Jarak ke Ka'bah -->
+                    <div class="bg-white muslim-frame-card rounded-3xl p-5 sm:p-6 border border-pastel-warm shadow-card flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-pastel-butterLight text-pastel-butterDark">Detail Arah Kiblat</span>
+                            <h3 id="qibla-city-title" class="text-xl font-extrabold text-pastel-ink">Bekasi &amp; Sekitarnya</h3>
+                            <p id="qibla-coords-text" class="text-xs text-pastel-muted">Koordinat: -6.2383° LS, 106.9756° BT</p>
+
+                            <div class="grid grid-cols-2 gap-3 pt-2">
+                                <div class="rounded-2xl bg-pastel-cream border border-pastel-warm p-3.5">
+                                    <p class="text-[10px] font-bold uppercase text-pastel-muted">Sudut Kiblat</p>
+                                    <p id="qibla-angle-value" class="text-xl font-extrabold text-pastel-sageDark mt-0.5">295.2°</p>
+                                    <p id="qibla-direction-desc" class="text-[11px] font-semibold text-pastel-muted mt-0.5">Barat Laut</p>
+                                </div>
+                                <div class="rounded-2xl bg-pastel-cream border border-pastel-warm p-3.5">
+                                    <p class="text-[10px] font-bold uppercase text-pastel-muted">Jarak ke Ka'bah</p>
+                                    <p id="qibla-distance-value" class="text-xl font-extrabold text-pastel-ink mt-0.5">7.910 km</p>
+                                    <p class="text-[11px] font-semibold text-pastel-muted mt-0.5">Makkah Al-Mukarramah</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl bg-pastel-sageLight/60 border border-pastel-sage/25 p-3.5 text-xs text-pastel-ink leading-relaxed">
+                            Tips: Hadapkan bagian atas HP ke arah depan tubuhmu, lalu putar tubuh hingga penanda <strong class="text-pastel-sageDark">Ka'bah</strong> berada lurus di posisi atas kompas.
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- =============================================================== -->
+            <!-- TAB 4: KALENDER ISLAM & IBADAH BULANAN                          -->
+            <!-- =============================================================== -->
+            <main id="tab-kalender" class="hidden space-y-4 sm:space-y-5 animate-fade-slide">
+                <div class="bg-gradient-to-r from-pastel-skyLight via-pastel-sageLight/70 to-pastel-butterLight muslim-frame-card rounded-3xl p-4 sm:p-6 border border-pastel-warm flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg sm:text-2xl font-extrabold text-pastel-ink">Kalender Islam &amp; Ibadah</h2>
+                        <p class="text-xs sm:text-sm text-pastel-muted mt-0.5">Pantau tanggal Masehi, Hijriah, hari sunnah &amp; catatan ibadah bulanan</p>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="changeCalendarMonth(-1)" class="w-9 h-9 rounded-2xl bg-white border border-pastel-warm font-extrabold text-pastel-ink hover:bg-pastel-cream cursor-pointer">←</button>
+                        <button onclick="resetCalendarToToday()" class="px-3.5 py-2 rounded-2xl bg-white border border-pastel-warm text-xs font-extrabold text-pastel-sageDark hover:bg-pastel-sageLight cursor-pointer">Bulan Ini</button>
+                        <button onclick="changeCalendarMonth(1)" class="w-9 h-9 rounded-2xl bg-white border border-pastel-warm font-extrabold text-pastel-ink hover:bg-pastel-cream cursor-pointer">→</button>
+                    </div>
+                </div>
+
+                <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-6 border border-pastel-warm shadow-card space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h3 id="islamic-month-heading" class="text-base sm:text-lg font-extrabold text-pastel-ink">November 2026</h3>
+                        <div class="flex flex-wrap items-center gap-2 text-[11px] font-bold">
+                            <span class="px-2.5 py-1 rounded-full bg-pastel-sageLight text-pastel-sageDark">Sholat Tercatat</span>
+                            <span id="cal-legend-haid" class="hidden px-2.5 py-1 rounded-full bg-pastel-roseLight text-pastel-roseDark">Libur Sholat</span>
+                            <span class="px-2.5 py-1 rounded-full bg-pastel-butterLight text-pastel-butterDark">Hari Sunnah</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-1.5 text-center text-[11px] font-extrabold text-pastel-muted">
+                        <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+                    </div>
+                    <div id="islamic-calendar-grid" class="grid grid-cols-7 gap-1.5"></div>
+                </div>
+
+                <!-- Detail Tanggal Terpilih -->
+                <div id="selected-calendar-detail" class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card">
+                    <p class="text-xs font-bold text-pastel-muted">Ketuk salah satu tanggal pada kalender untuk melihat detail Hijriah &amp; catatan ibadahnya.</p>
+                </div>
+            </main>
+
+            <!-- =============================================================== -->
+            <!-- TAB 5: DASHBOARD MENSTRUASI (KHUSUS MUSLIMAH)                   -->
+            <!-- =============================================================== -->
+            <main id="tab-menstruasi" class="hidden space-y-4 sm:space-y-5 animate-fade-slide">
+                <div id="menstruasi-tab-content" class="space-y-4 sm:space-y-5"></div>
+            </main>
+
+            <!-- =============================================================== -->
+            <!-- TAB 6: PROFIL & PENGATURAN                                      -->
+            <!-- =============================================================== -->
+            <main id="tab-profil" class="hidden space-y-4 sm:space-y-5 animate-fade-slide">
+                <div class="bg-white muslim-frame-card rounded-3xl p-5 sm:p-6 border border-pastel-warm shadow-card space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg sm:text-xl font-extrabold text-pastel-ink">Profil &amp; Pengaturan Akun</h2>
+                            <p class="text-xs text-pastel-muted">Kelola nama panggilan, kategori profil, dan PIN keamanan</p>
+                        </div>
+                        <span class="w-10 h-10 rounded-2xl bg-pastel-butterLight text-pastel-butterDark flex items-center justify-center animate-lantern-sway">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v2"/><path d="M8 7h8l2 4v6l-2 3H8l-2-3v-6l2-4z"/><circle cx="12" cy="14" r="1.5" fill="currentColor"/></svg>
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-pastel-muted mb-1.5">Nama Panggilan</label>
+                            <input id="edit-profile-name" type="text" class="w-full px-4 py-2.5 rounded-2xl border border-pastel-warm bg-pastel-cream text-sm font-bold focus:outline-none focus:border-pastel-sage" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-pastel-muted mb-1.5">PIN Baru (4 Digit)</label>
+                            <input id="edit-profile-pin" type="password" inputmode="numeric" maxlength="4" placeholder="Kosongkan jika tidak diubah"
+                                class="w-full px-4 py-2.5 rounded-2xl border border-pastel-warm bg-pastel-cream text-sm font-bold focus:outline-none focus:border-pastel-sage" />
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <button onclick="saveProfileSettings()" class="px-5 py-2.5 rounded-2xl bg-pastel-sage text-white text-xs sm:text-sm font-extrabold hover:bg-pastel-sageDark transition cursor-pointer">
+                            Simpan Perubahan
+                        </button>
+                        <button onclick="deleteCurrentProfile()" class="px-4 py-2.5 rounded-2xl bg-pastel-roseLight text-pastel-roseDark text-xs font-extrabold hover:bg-pastel-rose hover:text-white transition cursor-pointer">
+                            Hapus Profil Ini
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- BOTTOM PILL NAVIGATION BAR (7 MENU SEJAJAR)                          -->
+    <!-- ===================================================================== -->
+    <nav id="bottom-nav-bar" class="hidden fixed bottom-2.5 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 w-[96%] max-w-2xl">
+        <div class="bg-white/95 backdrop-blur-md border border-pastel-warm rounded-full p-1 sm:p-1.5 shadow-soft grid grid-cols-7 gap-0.5 sm:gap-1 items-center">
+            <button id="nav-btn-beranda" onclick="switchTab('beranda')" class="nav-pill-btn w-full py-2 px-0.5 sm:px-2 rounded-full text-[9px] sm:text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 transition cursor-pointer bg-pastel-sageLight text-pastel-sageDark min-w-0">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                <span class="truncate">Sholat</span>
+            </button>
+            <button id="nav-btn-doa" onclick="switchTab('doa')" class="nav-pill-btn w-full py-2 px-0.5 sm:px-2 rounded-full text-[9px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 transition cursor-pointer text-pastel-muted hover:text-pastel-ink min-w-0">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <span class="truncate">Doa</span>
+            </button>
+            <button id="nav-btn-jadwal" onclick="switchTab('jadwal')" class="nav-pill-btn w-full py-2 px-0.5 sm:px-2 rounded-full text-[9px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 transition cursor-pointer text-pastel-muted hover:text-pastel-ink min-w-0">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+                <span class="truncate">Jadwal</span>
+            </button>
+            <button id="nav-btn-kiblat" onclick="switchTab('kiblat')" class="nav-pill-btn w-full py-2 px-0.5 sm:px-2 rounded-full text-[9px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 transition cursor-pointer text-pastel-muted hover:text-pastel-ink min-w-0">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="12 3 21 12 12 21 3 12"/><circle cx="12" cy="12" r="2.5"/></svg>
+                <span class="truncate">Kiblat</span>
+            </button>
+            <button id="nav-btn-kalender" onclick="switchTab('kalender')" class="nav-pill-btn w-full py-2 px-0.5 sm:px-2 rounded-full text-[9px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 transition cursor-pointer text-pastel-muted hover:text-pastel-ink min-w-0">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span class="truncate">Kalender</span>
+            </button>
+            <button id="nav-btn-menstruasi" onclick="switchTab('menstruasi')" class="nav-pill-btn w-full py-2 px-0.5 sm:px-2 rounded-full text-[9px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 transition cursor-pointer text-pastel-muted hover:text-pastel-ink min-w-0">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                <span class="truncate">Mens</span>
+            </button>
+            <button id="nav-btn-profil" onclick="switchTab('profil')" class="nav-pill-btn w-full py-2 px-0.5 sm:px-2 rounded-full text-[9px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 transition cursor-pointer text-pastel-muted hover:text-pastel-ink min-w-0">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>
+                <span class="truncate">Profil</span>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        const STORAGE_KEY = 'qalbu_tracker_v1';
+
+        const DEFAULT_PROFILES = [
+            {
+                id: 'cacha',
+                name: 'Cacha',
+                pin: '1234',
+                category: 'muslimah',
+                accent: 'rose',
+                haidDates: ['2026-11-06'],
+                cycleLength: 28,
+                logs: {},
+                favoriteDoas: ['doa-pagi-petang', 'ayat-kursi'],
+                readDoas: []
+            },
+            {
+                id: 'edo',
+                name: 'Edo',
+                pin: '1234',
+                category: 'general',
+                accent: 'sage',
+                haidDates: [],
+                cycleLength: 28,
+                logs: {},
+                favoriteDoas: ['doa-sebelum-makan'],
+                readDoas: []
+            }
+        ];
+
+        const WAJIB_SHOLAT = [
+            { id: 'subuh', name: 'Subuh', hint: 'Fajar shadiq', badgeBg: 'bg-pastel-skyLight', badgeText: 'text-pastel-skyDark' },
+            { id: 'dzuhur', name: 'Dzuhur', hint: 'Tengah hari', badgeBg: 'bg-pastel-butterLight', badgeText: 'text-pastel-butterDark' },
+            { id: 'ashar', name: 'Ashar', hint: 'Sore hari', badgeBg: 'bg-pastel-lavenderLight', badgeText: 'text-pastel-lavenderDark' },
+            { id: 'maghrib', name: 'Maghrib', hint: 'Terbenam surya', badgeBg: 'bg-pastel-roseLight', badgeText: 'text-pastel-roseDark' },
+            { id: 'isya', name: 'Isya', hint: 'Malam hari', badgeBg: 'bg-pastel-sageLight', badgeText: 'text-pastel-sageDark' }
+        ];
+
+        const SUNNAH_ITEMS = [
+            { id: 'dhuha', title: 'Sholat Sunnah Dhuha', desc: 'Minimal 2 rakaat di waktu pagi', points: 15 },
+            { id: 'tilawah', title: 'Tilawah Al-Qur\'an', desc: 'Baca beberapa ayat atau halaman hari ini', points: 15 },
+            { id: 'dzikir', title: 'Dzikir Pagi & Petang', desc: 'Tasbih, tahmid, takbir & istighfar', points: 10 },
+            { id: 'sedekah', title: 'Sedekah & Kebaikan Kecil', desc: 'Berbagi rezeki, senyum, atau membantu sesama', points: 15 }
+        ];
+
+        const HADITH_QUOTES = [
+            {
+                text: '"Sebaik-baik kalian adalah orang yang mempelajari Al-Qur\'an dan mengajarkannya."',
+                source: 'HR. Bukhari'
+            },
+            {
+                text: '"Amalan yang paling dicintai oleh Allah adalah amalan yang kontinu (istiqamah) meskipun sedikit."',
+                source: 'HR. Bukhari & Muslim'
+            },
+            {
+                text: '"Sholat lima waktu dan Jum\'at ke Jum\'at berikutnya adalah penghapus dosa di antara keduanya selama tidak dilakukan dosa besar."',
+                source: 'HR. Muslim'
+            },
+            {
+                text: '"Doa adalah senjata orang mukmin, tiang agama, dan cahaya langit serta bumi."',
+                source: 'HR. Al-Hakim'
+            }
+        ];
+
+        const DOA_COLLECTION = [
+            {
+                id: 'doa-pagi-petang',
+                title: 'Doa Memohon Ilmu, Rezeki & Amalan Diterima',
+                category: 'Pagi & Petang',
+                arabic: 'اللَّهُمَّ إِنِّي أَسْأَلُكَ عِلْمًا نَافِعًا وَرِزْقًا طَيِّبًا وَعَمَلًا مُتَقَبَّلًا',
+                latin: 'Allahumma inni as-aluka \'ilman naafi\'an, wa rizqan thayyiban, wa \'amalan mutaqabbalan.',
+                meaning: 'Ya Allah, sungguh aku memohon kepada-Mu ilmu yang bermanfaat, rezeki yang halal lagi baik, dan amalan yang diterima.'
+            },
+            {
+                id: 'ayat-kursi',
+                title: 'Ayat kursi (QS. Al-Baqarah: 255)',
+                category: 'Perlindungan',
+                arabic: 'اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ ۚ لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ ۚ لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ',
+                latin: 'Allahu laa ilaaha illaa huwal hayyul qayyuum, laa ta\'khudzuhuu sinatuw wa laa naum, lahuu maa fis samaawaati wa maa fil ardhi...',
+                meaning: 'Allah, tidak ada Tuhan selain Dia. Yang Maha Hidup, Yang terus-menerus mengurus makhluk-Nya; tidak mengantuk dan tidak tidur. Milik-Nya apa yang ada di langit dan apa yang ada di bumi.'
+            },
+            {
+                id: 'al-kahfi-1-10',
+                title: 'Surah Al-Kahfi Ayat 1–10 (Pembuka & Perlindungan)',
+                category: 'Perlindungan',
+                arabic: 'الْحَمْدُ لِلَّهِ الَّذِي أَنْزَلَ عَلَىٰ عَبْدِهِ الْكِتَابَ وَلَمْ يَجْعَلْ لَهُ عِوَجًا ۜ',
+                latin: 'Alhamdu lillaahil ladzii anzala \'alaa \'abdihil kitaaba wa lam yaj\'al lahuu \'iwajaa...',
+                meaning: 'Segala puji bagi Allah yang telah menurunkan Kitab (Al-Qur\'an) kepada hamba-Nya dan Dia tidak menjadikannya bengkok; sebagai bimbingan yang lurus.'
+            },
+            {
+                id: 'doa-sebelum-makan',
+                title: 'Doa Sebelum Makan',
+                category: 'Aktivitas',
+                arabic: 'اللَّهُمَّ بَارِكْ لَنَا فِيمَا رَزَقْتَنَا وَقِنَا عَذَابَ النَّارِ',
+                latin: 'Allahumma baarik lanaa fiimaa razaqtanaa wa qinaa \'adzaaban naar.',
+                meaning: 'Ya Allah, berkahilah kami pada apa yang telah Engkau rezekikan kepada kami dan lindungilah kami dari azab neraka.'
+            },
+            {
+                id: 'doa-sebelum-tidur',
+                title: 'Doa Sebelum Tidur',
+                category: 'Wajib & Harian',
+                arabic: 'بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا',
+                latin: 'Bismika Allahumma amuutu wa ahyaa.',
+                meaning: 'Dengan menyebut nama-Mu ya Allah, aku mati dan aku hidup.'
+            },
+            {
+                id: 'doa-kebaikan-dunia-akhirat',
+                title: 'Doa Sapu Jagat (Kebaikan Dunia & Akhirat)',
+                category: 'Wajib & Harian',
+                arabic: 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ',
+                latin: 'Rabbanaa aatinaa fid dunyaa hasanatan wa fil aakhirati hasanatan wa qinaa \'adzaaban naar.',
+                meaning: 'Ya Tuhan kami, berilah kami kebaikan di dunia dan kebaikan di akhirat, serta lindungilah kami dari azab neraka.'
+            }
+        ];
+
+        const PRAYER_CITIES = {
+            bekasi: { name: 'Bekasi & Sekitarnya', lat: -6.2383, lng: 106.9756, tz: 7 },
+            jakarta: { name: 'DKI Jakarta', lat: -6.2088, lng: 106.8456, tz: 7 },
+            bandung: { name: 'Bandung', lat: -6.9175, lng: 107.6191, tz: 7 },
+            bogor: { name: 'Bogor & Depok', lat: -6.5971, lng: 106.8060, tz: 7 },
+            semarang: { name: 'Semarang', lat: -6.9667, lng: 110.4167, tz: 7 },
+            yogyakarta: { name: 'Yogyakarta', lat: -7.7956, lng: 110.3695, tz: 7 },
+            surabaya: { name: 'Surabaya', lat: -7.2575, lng: 112.7521, tz: 7 },
+            malang: { name: 'Malang', lat: -7.9666, lng: 112.6326, tz: 7 },
+            medan: { name: 'Medan', lat: 3.5952, lng: 98.6722, tz: 7 },
+            palembang: { name: 'Palembang', lat: -2.9761, lng: 104.7754, tz: 7 },
+            padang: { name: 'Padang', lat: -0.9471, lng: 100.4172, tz: 7 },
+            denpasar: { name: 'Denpasar / Bali', lat: -8.6705, lng: 115.2126, tz: 8 },
+            makassar: { name: 'Makassar', lat: -5.1477, lng: 119.4327, tz: 8 },
+            balikpapan: { name: 'Balikpapan', lat: -1.2379, lng: 116.8529, tz: 8 },
+            banjarmasin: { name: 'Banjarmasin', lat: -3.3186, lng: 114.5944, tz: 8 },
+            manado: { name: 'Manado', lat: 1.4748, lng: 124.8421, tz: 8 },
+            ambon: { name: 'Ambon', lat: -3.6954, lng: 128.1814, tz: 9 },
+            jayapura: { name: 'Jayapura', lat: -2.5337, lng: 140.7181, tz: 9 }
+        };
+
+        let appState = loadAppState();
+        let activeProfileId = null;
+        let pendingLoginProfileId = null;
+        let newProfileCategory = 'muslimah';
+        let activeTab = 'beranda';
+        let hadithIndex = 0;
+        let doaCategory = 'Semua';
+        let doaSearchQuery = '';
+        let doaCardIndex = 0;
+        let calendarMonthOffset = 0;
+        let selectedCalendarDateKey = null;
+        let scheduleViewMode = 'today';
+        let customCoordsOverride = null;
+        let manualCompassHeading = 0;
+        let prayerCountdownInterval = null;
+
+        function loadAppState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && Array.isArray(parsed.profiles) && parsed.profiles.length > 0) {
+                        return {
+                            profiles: parsed.profiles,
+                            selectedCity: parsed.selectedCity || 'bekasi'
+                        };
+                    }
+                }
+            } catch (err) {
+                console.warn('Gagal memuat state dari localStorage:', err);
+            }
+            return {
+                profiles: JSON.parse(JSON.stringify(DEFAULT_PROFILES)),
+                selectedCity: 'bekasi'
+            };
+        }
+
+        function saveAppState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+            } catch (err) {
+                console.warn('Gagal menyimpan state ke localStorage:', err);
+            }
+        }
+
+        function showToast(msg) {
+            const banner = document.getElementById('toast-banner');
+            const text = document.getElementById('toast-message');
+            if (!banner || !text) return;
+            text.textContent = msg;
+            banner.classList.remove('hidden');
+            clearTimeout(window.__toastTimer);
+            window.__toastTimer = setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 2400);
+        }
+
+        function spawnSparkles(x, y) {
+            const glyphs = ['✦', '❖', '☾', '✧'];
+            const colors = ['#4D6D59', '#A8586E', '#A67C1E', '#6C5D94'];
+            for (let i = 0; i < 6; i++) {
+                const el = document.createElement('span');
+                el.className = 'sparkle-dot';
+                el.textContent = glyphs[i % glyphs.length];
+                el.style.color = colors[i % colors.length];
+                el.style.left = `${x}px`;
+                el.style.top = `${y}px`;
+                const angle = (Math.PI * 2 * i) / 6;
+                el.style.setProperty('--dx', `${Math.round(Math.cos(angle) * 28)}px`);
+                el.style.setProperty('--dy', `${Math.round(Math.sin(angle) * 24)}px`);
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 780);
+            }
+        }
+
+        function triggerMascotCheer(el) {
+            const rect = el ? el.getBoundingClientRect() : { left: window.innerWidth / 2, top: 80, width: 20, height: 20 };
+            spawnSparkles(rect.left + rect.width / 2, rect.top + rect.height / 2);
+            showToast('Barakallahu fiik! Semangat ibadah hari ini ❖');
+        }
+
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('button') || e.target.closest('.sholat-card-item')) {
+                spawnSparkles(e.clientX, e.clientY);
+            }
+        });
+
+        function toDateKey(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function parseDateKey(key) {
+            const [y, m, d] = key.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        }
+
+        function formatIndoDate(dateObj) {
+            return dateObj.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        function formatShortIndoDate(dateObj) {
+            return dateObj.toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        function getHijriInfo(dateObj) {
+            const hijriMonths = [
+                'Muharram', 'Safar', 'Rabiul Awal', 'Rabiul Akhir',
+                'Jumadil Awal', 'Jumadil Akhir', 'Rajab', 'Syaban',
+                'Ramadhan', 'Syawal', 'Dzulqaidah', 'Dzulhijjah'
+            ];
+            try {
+                const fmt = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
+                    day: 'numeric',
+                    month: 'numeric',
+                    year: 'numeric'
+                });
+                const parts = fmt.formatToParts(dateObj);
+                const day = parseInt(parts.find(p => p.type === 'day')?.value || '1', 10);
+                const month = parseInt(parts.find(p => p.type === 'month')?.value || '1', 10);
+                const year = parseInt(parts.find(p => p.type === 'year')?.value || '1448', 10);
+                const monthName = hijriMonths[(month - 1 + 12) % 12] || 'Jumadil Awal';
+                return { day, month, monthName, year, full: `${day} ${monthName} ${year} H` };
+            } catch (_) {
+                return { day: 12, month: 5, monthName: 'Jumadil Awal', year: 1448, full: '12 Jumadil Awal 1448 H' };
+            }
+        }
+
+        function getSunnahDayInfo(dateObj, hijriInfo) {
+            const dow = dateObj.getDay();
+            const isAyyamulBidh = [13, 14, 15].includes(hijriInfo.day);
+            const badges = [];
+            if (dow === 1 || dow === 4) badges.push('Sunnah Senin–Kamis');
+            if (dow === 5) badges.push('Hari Jum\'at (Al-Kahfi)');
+            if (isAyyamulBidh) badges.push('Ayyamul Bidh (13–15 H)');
+            return {
+                badge: badges.length ? badges[0] : 'Hari Biasa',
+                note: badges.length ? `Amalan dianjurkan: ${badges.join(' • ')}` : 'Perbanyak dzikir, tilawah & sedekah harian'
+            };
+        }
+
+        function getActiveProfile() {
+            return appState.profiles.find(p => p.id === activeProfileId) || null;
+        }
+
+        function ensureDayLog(profile, dateKey) {
+            if (!profile.logs[dateKey]) {
+                profile.logs[dateKey] = {
+                    wajib: { subuh: false, dzuhur: false, ashar: false, maghrib: false, isya: false },
+                    sunnah: {}
+                };
+            }
+            return profile.logs[dateKey];
+        }
+
+        function renderAvatarSVG(accent, isMuslimah) {
+            const bg = accent === 'rose' ? 'bg-pastel-roseLight text-pastel-roseDark' : 'bg-pastel-sageLight text-pastel-sageDark';
+            if (isMuslimah) {
+                return `<div class="${bg} w-full h-full rounded-2xl flex items-center justify-center relative overflow-hidden">
+                    <svg class="w-9 h-9" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <!-- Kerudung chibi perempuan menggemaskan -->
+                        <path d="M18 4.5C9.6 4.5 5.6 11 5.6 19.6C5.6 24.8 4.8 28.2 4 31H32C31.2 28.2 30.4 24.8 30.4 19.6C30.4 11 26.4 4.5 18 4.5Z" fill="currentColor" fill-opacity="0.24" />
+                        <!-- Pita kecil lucu di puncak kerudung -->
+                        <path d="M18 6.4L14.8 4.4C14.1 4 13.5 4.8 14 5.5L16.4 7.2" fill="currentColor" fill-opacity="0.35" />
+                        <path d="M18 6.4L21.2 4.4C21.9 4 22.5 4.8 22 5.5L19.6 7.2" fill="currentColor" fill-opacity="0.35" />
+                        <circle cx="18" cy="6.6" r="1.1" fill="currentColor" />
+                        <!-- Wajah bulat chibi perempuan -->
+                        <ellipse cx="18" cy="18.6" rx="7.3" ry="6.7" fill="#FDFBF7" />
+                        <!-- Mata chibi bulat besar berbinar -->
+                        <circle cx="15" cy="18.1" r="1.85" fill="currentColor" stroke="none" />
+                        <circle cx="21" cy="18.1" r="1.85" fill="currentColor" stroke="none" />
+                        <circle cx="15.55" cy="17.45" r="0.65" fill="#FFFFFF" stroke="none" />
+                        <circle cx="21.55" cy="17.45" r="0.65" fill="#FFFFFF" stroke="none" />
+                        <!-- Pipi chibi merona -->
+                        <ellipse cx="12.8" cy="20.5" rx="1.55" ry="0.9" fill="#D98A9E" fill-opacity="0.65" stroke="none" />
+                        <ellipse cx="23.2" cy="20.5" rx="1.55" ry="0.9" fill="#D98A9E" fill-opacity="0.65" stroke="none" />
+                        <!-- Senyum chibi manis -->
+                        <path d="M16.3 21.1C17.2 22.15 18.8 22.15 19.7 21.1" />
+                        <!-- Lipatan kerudung -->
+                        <path d="M10.8 29.8C13 26.6 15.4 25.6 18 25.6C20.6 25.6 23 26.6 25.2 29.8" />
+                    </svg>
+                </div>`;
+            }
+            return `<div class="${bg} w-full h-full rounded-2xl flex items-center justify-center relative overflow-hidden">
+                <svg class="w-9 h-9" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- Kopiah / peci chibi laki-laki menggemaskan -->
+                    <path d="M9.6 12.6L11.8 6.8C15.8 5.5 20.2 5.5 24.2 6.8L26.4 12.6H9.6Z" fill="currentColor" fill-opacity="0.32" />
+                    <path d="M10.6 12.6H25.4" stroke-width="2.2" />
+                    <path d="M15.5 6.4L18 9.2L20.5 6.4" stroke-width="1.5" />
+                    <!-- Wajah bulat chibi laki-laki -->
+                    <ellipse cx="18" cy="18.8" rx="7.3" ry="6.6" fill="#FDFBF7" />
+                    <!-- Poni chibi lucu -->
+                    <path d="M13 13.8C14.8 15.3 16.6 14.8 18 13.5C19.4 14.8 21.2 15.3 23 13.8" stroke-width="1.65" />
+                    <!-- Mata chibi bulat besar berbinar -->
+                    <circle cx="15.1" cy="18.2" r="1.8" fill="currentColor" stroke="none" />
+                    <circle cx="20.9" cy="18.2" r="1.8" fill="currentColor" stroke="none" />
+                    <circle cx="15.65" cy="17.55" r="0.62" fill="#FFFFFF" stroke="none" />
+                    <circle cx="21.45" cy="17.55" r="0.62" fill="#FFFFFF" stroke="none" />
+                    <!-- Pipi chibi -->
+                    <ellipse cx="13" cy="20.5" rx="1.5" ry="0.85" fill="#7E9E8A" fill-opacity="0.55" stroke="none" />
+                    <ellipse cx="23" cy="20.5" rx="1.5" ry="0.85" fill="#7E9E8A" fill-opacity="0.55" stroke="none" />
+                    <!-- Senyum chibi ceria -->
+                    <path d="M16.2 21.2C17.1 22.2 18.9 22.2 19.8 21.2" />
+                    <!-- Baju koko chibi -->
+                    <path d="M8 31C9.2 26.8 13.1 25.5 18 25.5C22.9 25.5 26.8 26.8 28 31" />
+                </svg>
+            </div>`;
+        }
+
+        function deleteProfileById(event, profileId) {
+            if (event) event.stopPropagation();
+            if (appState.profiles.length <= 1) {
+                showToast('Minimal harus ada 1 profil tersimpan.');
+                return;
+            }
+            const idx = appState.profiles.findIndex(p => p.id === profileId);
+            if (idx === -1) return;
+            const removed = appState.profiles[idx];
+            appState.profiles.splice(idx, 1);
+            saveAppState();
+            if (activeProfileId === profileId) {
+                logoutProfile();
+            } else {
+                renderProfileSelection();
+            }
+            showToast(`Profil ${removed.name} dihapus.`);
+        }
+
+        function renderProfileSelection() {
+            const grid = document.getElementById('profile-cards-grid');
+            if (!grid) return;
+            grid.innerHTML = appState.profiles.map(p => {
+                const isMuslimah = p.category === 'muslimah';
+                return `<div onclick="openPinModal('${p.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openPinModal('${p.id}');}" class="relative w-full text-left bg-white hover:bg-pastel-cream border border-pastel-warm rounded-2xl p-4 pr-10 flex items-center justify-between gap-3 transition shadow-2xs interactive-card cursor-pointer">
+                    <button type="button" onclick="deleteProfileById(event, '${p.id}')" aria-label="Hapus profil ${p.name}" title="Hapus profil ${p.name}"
+                        class="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-pastel-cream hover:bg-pastel-roseLight text-pastel-muted hover:text-pastel-roseDark flex items-center justify-center text-xs font-extrabold transition cursor-pointer">
+                        ×
+                    </button>
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-12 h-12 shrink-0">${renderAvatarSVG(p.accent || 'sage', isMuslimah)}</div>
+                        <div class="min-w-0">
+                            <h3 class="text-sm sm:text-base font-extrabold text-pastel-ink truncate">${p.name}</h3>
+                            <span class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${isMuslimah ? 'bg-pastel-roseLight text-pastel-roseDark' : 'bg-pastel-sageLight text-pastel-sageDark'}">${isMuslimah ? 'Muslimah' : 'Umum / Ikhwan'}</span>
+                        </div>
+                    </div>
+                    <span class="text-xs font-extrabold text-pastel-sageDark shrink-0">Masuk →</span>
+                </div>`;
+            }).join('');
+        }
+
+        function openPinModal(profileId) {
+            const p = appState.profiles.find(item => item.id === profileId);
+            if (!p) return;
+            pendingLoginProfileId = profileId;
+            document.getElementById('profile-selection-view').classList.add('hidden');
+            document.getElementById('add-profile-view').classList.add('hidden');
+            document.getElementById('pin-entry-view').classList.remove('hidden');
+            document.getElementById('selected-profile-name').textContent = p.name;
+            document.getElementById('selected-profile-avatar').innerHTML = renderAvatarSVG(p.accent || 'sage', p.category === 'muslimah');
+            document.getElementById('pin-error-msg').classList.add('hidden');
+            const input = document.getElementById('pin-input');
+            input.value = '';
+            setTimeout(() => input.focus(), 60);
+        }
+
+        function backToProfiles() {
+            pendingLoginProfileId = null;
+            document.getElementById('pin-entry-view').classList.add('hidden');
+            document.getElementById('add-profile-view').classList.add('hidden');
+            document.getElementById('profile-selection-view').classList.remove('hidden');
+        }
+
+        function openAddProfileModal() {
+            document.getElementById('profile-selection-view').classList.add('hidden');
+            document.getElementById('pin-entry-view').classList.add('hidden');
+            document.getElementById('add-profile-view').classList.remove('hidden');
+            selectNewProfileCategory('muslimah');
+        }
+
+        function closeAddProfileModal() {
+            backToProfiles();
+        }
+
+        function selectNewProfileCategory(cat) {
+            newProfileCategory = cat;
+            const mBtn = document.getElementById('cat-btn-muslimah');
+            const gBtn = document.getElementById('cat-btn-general');
+            if (cat === 'muslimah') {
+                mBtn.className = 'py-2.5 px-3 rounded-2xl border-2 border-pastel-rose bg-pastel-roseLight text-pastel-roseDark text-xs font-extrabold cursor-pointer';
+                gBtn.className = 'py-2.5 px-3 rounded-2xl border border-pastel-warm bg-white text-pastel-muted text-xs font-bold cursor-pointer';
+            } else {
+                gBtn.className = 'py-2.5 px-3 rounded-2xl border-2 border-pastel-sage bg-pastel-sageLight text-pastel-sageDark text-xs font-extrabold cursor-pointer';
+                mBtn.className = 'py-2.5 px-3 rounded-2xl border border-pastel-warm bg-white text-pastel-muted text-xs font-bold cursor-pointer';
+            }
+        }
+
+        function createNewProfile() {
+            const nameInput = document.getElementById('new-profile-name');
+            const pinInput = document.getElementById('new-profile-pin');
+            const name = nameInput.value.trim();
+            const pin = pinInput.value.trim();
+            if (!name) {
+                showToast('Masukkan nama panggilan terlebih dahulu.');
+                return;
+            }
+            if (!/^\d{4}$/.test(pin)) {
+                showToast('PIN harus 4 angka.');
+                return;
+            }
+            const id = `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString().slice(-4)}`;
+            appState.profiles.push({
+                id,
+                name,
+                pin,
+                category: newProfileCategory,
+                accent: newProfileCategory === 'muslimah' ? 'rose' : 'sage',
+                haidDates: [],
+                cycleLength: 28,
+                logs: {},
+                favoriteDoas: [],
+                readDoas: []
+            });
+            saveAppState();
+            nameInput.value = '';
+            pinInput.value = '';
+            showToast(`Profil ${name} berhasil dibuat!`);
+            loginSuccess(id);
+        }
+
+        function submitPin() {
+            const p = appState.profiles.find(item => item.id === pendingLoginProfileId);
+            const pinVal = document.getElementById('pin-input').value.trim();
+            if (!p) return;
+            if (pinVal === p.pin) {
+                loginSuccess(p.id);
+            } else {
+                document.getElementById('pin-error-msg').classList.remove('hidden');
+            }
+        }
+
+        function appendPinDigit(digit) {
+            const input = document.getElementById('pin-input');
+            if (!input || input.value.length >= 4) return;
+            input.value += String(digit);
+            document.getElementById('pin-error-msg')?.classList.add('hidden');
+            if (input.value.length === 4) {
+                submitPin();
+            }
+        }
+
+        function backspacePinDigit() {
+            const input = document.getElementById('pin-input');
+            if (!input) return;
+            input.value = input.value.slice(0, -1);
+            document.getElementById('pin-error-msg')?.classList.add('hidden');
+        }
+
+        function clearPinInput() {
+            const input = document.getElementById('pin-input');
+            if (!input) return;
+            input.value = '';
+            document.getElementById('pin-error-msg')?.classList.add('hidden');
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !document.getElementById('pin-entry-view')?.classList.contains('hidden')) {
+                submitPin();
+            }
+        });
+
+        function loginSuccess(profileId) {
+            activeProfileId = profileId;
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('main-app-shell').classList.remove('hidden');
+            document.getElementById('bottom-nav-bar').classList.remove('hidden');
+            switchTab('beranda');
+            renderAll();
+        }
+
+        function logoutProfile() {
+            activeProfileId = null;
+            document.getElementById('main-app-shell').classList.add('hidden');
+            document.getElementById('bottom-nav-bar').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            backToProfiles();
+            renderProfileSelection();
+        }
+
+        function switchTab(tabName) {
+            activeTab = tabName;
+            const tabs = ['beranda', 'doa', 'jadwal', 'kiblat', 'kalender', 'menstruasi', 'profil'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`nav-btn-${t}`);
+                if (el) el.classList.toggle('hidden', t !== tabName);
+                if (btn) {
+                    const isActive = t === tabName;
+                    btn.className = isActive
+                        ? 'nav-pill-btn w-full py-2 px-0.5 sm:px-2 rounded-full text-[9px] sm:text-xs font-extrabold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 transition cursor-pointer bg-pastel-sageLight text-pastel-sageDark min-w-0'
+                        : 'nav-pill-btn w-full py-2 px-0.5 sm:px-2 rounded-full text-[9px] sm:text-xs font-bold flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 transition cursor-pointer text-pastel-muted hover:text-pastel-ink min-w-0';
+                }
+            });
+            renderAll();
+        }
+
+        function getHaidCycleSummary(profile) {
+            const dates = Array.isArray(profile?.haidDates) ? [...profile.haidDates].sort() : [];
+            const cycleLen = profile?.cycleLength || 28;
+            const today = new Date();
+            const todayKey = toDateKey(today);
+            const isTodayHaid = dates.includes(todayKey);
+
+            if (dates.length === 0) {
+                return {
+                    hasData: false,
+                    isTodayHaid: false,
+                    consecutiveDays: 0,
+                    isIstihadhah: false,
+                    hphtKey: null,
+                    hphtDate: null,
+                    nextHaidDate: null,
+                    threeMonthCycles: [],
+                    haidSet: new Set(),
+                    fertileSet: new Set(),
+                    predictedSet: new Set()
+                };
+            }
+
+            const haidSet = new Set(dates);
+            // Hitung hari beruntun sampai hari terakhir haid atau hari ini
+            let anchorDate = isTodayHaid ? new Date(today) : parseDateKey(dates[dates.length - 1]);
+            let consecutiveDays = 0;
+            let cursor = new Date(anchorDate);
+            while (haidSet.has(toDateKey(cursor))) {
+                consecutiveDays++;
+                cursor.setDate(cursor.getDate() - 1);
+            }
+
+            const isIstihadhah = consecutiveDays > 15;
+            const hphtKey = dates[dates.length - 1];
+            const hphtDate = parseDateKey(hphtKey);
+
+            // Hitung 3 siklus haid berikutnya (setiap siklus cycleLen hari)
+            const fertileSet = new Set();
+            const predictedSet = new Set();
+            const threeMonthCycles = [];
+
+            for (let c = 1; c <= 3; c++) {
+                const startHaid = new Date(hphtDate);
+                startHaid.setDate(startHaid.getDate() + cycleLen * c);
+
+                const fertileStart = new Date(startHaid);
+                fertileStart.setDate(fertileStart.getDate() - 18);
+                const fertileEnd = new Date(startHaid);
+                fertileEnd.setDate(fertileEnd.getDate() - 11);
+
+                threeMonthCycles.push({
+                    cycleNumber: c,
+                    haidStart: new Date(startHaid),
+                    fertileStart,
+                    fertileEnd
+                });
+
+                for (let d = 0; d < 5; d++) {
+                    const pd = new Date(startHaid);
+                    pd.setDate(pd.getDate() + d);
+                    predictedSet.add(toDateKey(pd));
+                }
+
+                let fc = new Date(fertileStart);
+                while (fc <= fertileEnd) {
+                    fertileSet.add(toDateKey(fc));
+                    fc.setDate(fc.getDate() + 1);
+                }
+            }
+
+            return {
+                hasData: true,
+                isTodayHaid,
+                consecutiveDays,
+                isIstihadhah,
+                hphtKey,
+                hphtDate,
+                nextHaidDate: threeMonthCycles[0]?.haidStart || null,
+                threeMonthCycles,
+                haidSet,
+                fertileSet,
+                predictedSet
+            };
+        }
+
+        function toggleTodayHaid() {
+            const p = getActiveProfile();
+            if (!p || p.category !== 'muslimah') return;
+            const key = toDateKey(new Date());
+            const set = new Set(p.haidDates || []);
+            if (set.has(key)) {
+                set.delete(key);
+                showToast('Status hari ini diubah menjadi Wajib Sholat');
+            } else {
+                set.add(key);
+                showToast('Status hari ini ditandai Libur Sholat');
+            }
+            p.haidDates = Array.from(set).sort();
+            saveAppState();
+            renderAll();
+        }
+
+        function toggleSpecificHaidDate(dateKey) {
+            const p = getActiveProfile();
+            if (!p || p.category !== 'muslimah' || !dateKey) return;
+            const set = new Set(p.haidDates || []);
+            if (set.has(dateKey)) {
+                set.delete(dateKey);
+                showToast(`Tanggal ${dateKey} dihapus dari catatan haid`);
+            } else {
+                set.add(dateKey);
+                showToast(`Tanggal ${dateKey} ditandai Libur Sholat`);
+            }
+            p.haidDates = Array.from(set).sort();
+            saveAppState();
+            renderAll();
+        }
+
+        function applyManualHaidDateInput() {
+            const p = getActiveProfile();
+            if (!p || p.category !== 'muslimah') return;
+            const input = document.getElementById('mens-date-picker');
+            if (!input || !input.value) {
+                showToast('Pilih tanggal terlebih dahulu.');
+                return;
+            }
+            toggleSpecificHaidDate(input.value);
+        }
+
+        function updateCycleLengthSetting(val) {
+            const p = getActiveProfile();
+            if (!p || p.category !== 'muslimah') return;
+            const num = parseInt(val, 10);
+            if (!isNaN(num) && num >= 21 && num <= 45) {
+                p.cycleLength = num;
+                saveAppState();
+                renderAll();
+            }
+        }
+
+        function renderHaidDashboardCard(profile) {
+            const slot = document.getElementById('haid-dashboard-slot');
+            if (!slot) return;
+            if (!profile || profile.category !== 'muslimah') {
+                slot.innerHTML = '';
+                return;
+            }
+
+            const info = getHaidCycleSummary(profile);
+            const isLiburSholat = info.isTodayHaid && !info.isIstihadhah;
+            const nextHaidText = info.nextHaidDate ? formatShortIndoDate(info.nextHaidDate) : 'Belum terhitung';
+
+            slot.innerHTML = `<div class="rounded-3xl p-4 sm:p-5 border ${isLiburSholat ? 'bg-pastel-roseLight/75 border-pastel-rose/40' : 'bg-white border-pastel-warm'} shadow-card interactive-card muslim-frame-card">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-start gap-3 min-w-0">
+                        <div class="w-11 h-11 rounded-2xl ${isLiburSholat ? 'bg-pastel-rose text-white' : 'bg-pastel-roseLight text-pastel-roseDark'} flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-[10px] font-extrabold uppercase tracking-wider text-pastel-roseDark">Tracker Menstruasi</span>
+                                ${info.isIstihadhah ? '<span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-pastel-butterLight text-pastel-butterDark">Istihadhah • Wajib Sholat</span>' : ''}
+                            </div>
+                            <h3 class="text-base sm:text-lg font-extrabold text-pastel-ink mt-0.5">
+                                ${isLiburSholat ? `Libur Sholat • Hari ke-${info.consecutiveDays}` : 'Wajib Sholat'}
+                            </h3>
+                            <p class="text-xs text-pastel-muted mt-0.5">
+                                ${info.hasData ? `HPHT: ${formatShortIndoDate(info.hphtDate)} • Est. Mens Berikutnya: <strong class="text-pastel-ink">${nextHaidText}</strong>` : 'Belum ada catatan tanggal haid'}
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="toggleTodayHaid()" class="px-4 py-2.5 rounded-2xl text-xs font-extrabold transition shrink-0 cursor-pointer ${isLiburSholat ? 'bg-pastel-sage text-white hover:bg-pastel-sageDark' : 'bg-pastel-roseLight text-pastel-roseDark hover:bg-pastel-rose hover:text-white'}">
+                        ${isLiburSholat ? 'Tandai Selesai Libur Sholat' : '+ Libur Sholat'}
+                    </button>
+                </div>
+            </div>`;
+        }
+
+        function renderMenstruasiTab(profile) {
+            const container = document.getElementById('menstruasi-tab-content');
+            if (!container) return;
+            if (!profile || profile.category !== 'muslimah') {
+                container.innerHTML = `<div class="bg-white rounded-3xl p-6 border border-pastel-warm text-center space-y-2">
+                    <h3 class="text-base font-extrabold text-pastel-ink">Khusus Profil Muslimah</h3>
+                    <p class="text-xs text-pastel-muted">Dashboard Menstruasi aktif untuk profil kategori Muslimah.</p>
+                </div>`;
+                return;
+            }
+
+            const info = getHaidCycleSummary(profile);
+            const isLiburSholat = info.isTodayHaid && !info.isIstihadhah;
+            const viewDate = new Date(new Date().getFullYear(), new Date().getMonth() + calendarMonthOffset, 1);
+            const year = viewDate.getFullYear();
+            const month = viewDate.getMonth();
+            const monthTitle = viewDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+            const firstDow = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const todayKey = toDateKey(new Date());
+
+            let cellsHtml = '';
+            for (let i = 0; i < firstDow; i++) {
+                cellsHtml += `<div class="h-14 sm:h-16 rounded-2xl bg-pastel-cream/40"></div>`;
+            }
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const isHaid = info.haidSet.has(key);
+                const isFertile = !isHaid && info.fertileSet.has(key);
+                const isPred = !isHaid && !isFertile && info.predictedSet.has(key);
+                const isToday = key === todayKey;
+
+                let cellStyle = 'bg-white border-pastel-warm text-pastel-ink hover:bg-pastel-cream';
+                let tagHtml = '';
+                if (isHaid) {
+                    cellStyle = 'bg-pastel-roseLight border-pastel-rose text-pastel-roseDark font-extrabold';
+                    tagHtml = `<span class="text-[9px] font-extrabold leading-none mt-0.5">Libur</span>`;
+                } else if (isFertile) {
+                    cellStyle = 'bg-pastel-sageLight border-pastel-sage/50 text-pastel-sageDark font-bold';
+                    tagHtml = `<span class="text-[9px] font-bold leading-none mt-0.5">Subur</span>`;
+                } else if (isPred) {
+                    cellStyle = 'bg-pastel-lavenderLight border-pastel-lavender/60 text-pastel-lavenderDark font-bold';
+                    tagHtml = `<span class="text-[9px] font-bold leading-none mt-0.5">Est. Mens</span>`;
+                }
+
+                const todayRing = isToday ? 'ring-2 ring-pastel-ink/50' : '';
+
+                cellsHtml += `<button type="button" onclick="toggleSpecificHaidDate('${key}')" class="h-14 sm:h-16 rounded-2xl border ${cellStyle} ${todayRing} flex flex-col items-center justify-center transition cursor-pointer select-none">
+                    <span class="text-xs sm:text-sm leading-none">${d}</span>
+                    ${tagHtml}
+                </button>`;
+            }
+
+            const cyclesHtml = info.threeMonthCycles.length
+                ? info.threeMonthCycles.map(c => `<div class="rounded-2xl bg-pastel-cream border border-pastel-warm p-3">
+                    <p class="text-[10px] font-extrabold uppercase text-pastel-lavenderDark">Siklus ke-${c.cycleNumber}</p>
+                    <p class="text-xs sm:text-sm font-extrabold text-pastel-ink mt-0.5">Est. Mens: ${formatShortIndoDate(c.haidStart)}</p>
+                    <p class="text-[11px] text-pastel-sageDark font-semibold mt-0.5">Masa Subur: ${formatShortIndoDate(c.fertileStart)} – ${formatShortIndoDate(c.fertileEnd)}</p>
+                </div>`).join('')
+                : `<p class="text-xs text-pastel-muted col-span-3">Catat tanggal mulai haid terlebih dahulu untuk melihat estimasi 3 bulan ke depan.</p>`;
+
+            container.innerHTML = `
+                <div class="bg-gradient-to-r from-pastel-roseLight via-pastel-lavenderLight/60 to-pastel-sageLight muslim-frame-card rounded-3xl p-4 sm:p-6 border border-pastel-warm flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="text-lg sm:text-2xl font-extrabold text-pastel-ink">Dashboard Menstruasi</h2>
+                        <p class="text-xs sm:text-sm text-pastel-muted mt-0.5">Pantau status Libur Sholat, masa subur, estimasi 3 bulan &amp; istihadhah</p>
+                    </div>
+                    <button onclick="toggleTodayHaid()" class="px-3.5 py-2.5 rounded-2xl text-xs font-extrabold transition shrink-0 cursor-pointer ${isLiburSholat ? 'bg-pastel-sage text-white' : 'bg-pastel-rose text-white'}">
+                        ${isLiburSholat ? 'Selesai Libur Sholat' : '+ Libur Sholat'}
+                    </button>
+                </div>
+
+                <!-- Ringkasan Masa Subur & Deteksi Istihadhah -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card">
+                        <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-pastel-sageLight text-pastel-sageDark mb-1.5">Masa Subur &amp; Siklus</span>
+                        <h3 class="text-base font-extrabold text-pastel-ink">
+                            ${info.threeMonthCycles[0] ? `${formatShortIndoDate(info.threeMonthCycles[0].fertileStart)} – ${formatShortIndoDate(info.threeMonthCycles[0].fertileEnd)}` : 'Menunggu Data HPHT'}
+                        </h3>
+                        <p class="text-xs text-pastel-muted mt-1">
+                            Perkiraan masa subur berada di sekitar 11–18 hari sebelum haid berikutnya (siklus ${profile.cycleLength || 28} hari).
+                        </p>
+                    </div>
+
+                    <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card">
+                        <span class="inline-block text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-pastel-butterLight text-pastel-butterDark mb-1.5">Deteksi Istihadhah</span>
+                        <h3 class="text-base font-extrabold text-pastel-ink">
+                            ${info.isIstihadhah ? `Terdeteksi Istihadhah (Hari ke-${info.consecutiveDays})` : 'Tidak Ada Indikasi Istihadhah'}
+                        </h3>
+                        <p class="text-xs text-pastel-muted mt-1">
+                            Batas maksimal haid umumnya 15 hari berturut-turut; mulai hari ke-16 darah dihukumi istihadhah dan sholat wajib kembali dijalankan.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Estimasi Haid 3 Bulan Ke Depan -->
+                <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card space-y-3">
+                    <div class="flex items-center justify-between gap-2">
+                        <h3 class="text-sm sm:text-base font-extrabold text-pastel-ink">Estimasi Haid &amp; Masa Subur (3 Bulan Ke Depan)</h3>
+                        <div class="flex items-center gap-1.5 text-xs font-bold text-pastel-muted">
+                            <span>Siklus:</span>
+                            <input type="number" min="21" max="45" value="${profile.cycleLength || 28}" onchange="updateCycleLengthSetting(this.value)"
+                                class="w-16 px-2 py-1 rounded-xl border border-pastel-warm bg-pastel-cream text-center font-extrabold text-pastel-ink" />
+                            <span>hari</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        ${cyclesHtml}
+                    </div>
+                </div>
+
+                <!-- Kalender Tunggal Menstruasi -->
+                <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-6 border border-pastel-warm shadow-card space-y-4">
+                    <div class="flex items-center justify-between gap-2">
+                        <button onclick="changeCalendarMonth(-1)" class="w-9 h-9 rounded-2xl bg-pastel-cream border border-pastel-warm font-extrabold text-pastel-ink hover:bg-pastel-warm cursor-pointer">←</button>
+                        <button onclick="resetCalendarToToday()" class="text-center cursor-pointer">
+                            <h3 class="text-sm sm:text-lg font-extrabold text-pastel-ink">${monthTitle}</h3>
+                            <p class="text-[10px] text-pastel-muted">Ketuk nama bulan untuk kembali ke bulan ini • Ketuk tanggal untuk toggle Libur Sholat</p>
+                        </button>
+                        <button onclick="changeCalendarMonth(1)" class="w-9 h-9 rounded-2xl bg-pastel-cream border border-pastel-warm font-extrabold text-pastel-ink hover:bg-pastel-warm cursor-pointer">→</button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2 text-[11px] font-bold">
+                        <span class="px-2.5 py-1 rounded-full bg-pastel-roseLight text-pastel-roseDark">Libur Sholat</span>
+                        <span class="px-2.5 py-1 rounded-full bg-pastel-sageLight text-pastel-sageDark">Masa Subur</span>
+                        <span class="px-2.5 py-1 rounded-full bg-pastel-lavenderLight text-pastel-lavenderDark">Est. Mens</span>
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-1.5 text-center text-[11px] font-extrabold text-pastel-muted">
+                        <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+                    </div>
+                    <div class="grid grid-cols-7 gap-1.5">
+                        ${cellsHtml}
+                    </div>
+                </div>
+
+                <!-- Catat / Ubah Tanggal Haid Manual -->
+                <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card">
+                    <h3 class="text-sm sm:text-base font-extrabold text-pastel-ink">Catat / Ubah Tanggal Haid</h3>
+                    <p class="text-xs text-pastel-muted mt-0.5 mb-3">Pilih tanggal untuk menandai atau menghapus catatan Libur Sholat</p>
+                    <div class="flex flex-col sm:flex-row gap-2.5">
+                        <input id="mens-date-picker" type="date" value="${todayKey}"
+                            class="flex-1 px-4 py-2.5 rounded-2xl border border-pastel-warm bg-pastel-cream text-sm font-bold text-pastel-ink focus:outline-none focus:border-pastel-rose" />
+                        <button onclick="applyManualHaidDateInput()" class="px-5 py-2.5 rounded-2xl bg-pastel-rose text-white hover:bg-pastel-roseDark text-xs sm:text-sm font-extrabold transition cursor-pointer shrink-0">
+                            Simpan / Ubah Libur Sholat
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Edukasi Istihadhah -->
+                <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card space-y-2.5">
+                    <h3 class="text-sm sm:text-base font-extrabold text-pastel-ink">Info Istihadhah: Mulai Kapan &amp; Ciri-Cirinya</h3>
+                    <div class="space-y-2 text-xs sm:text-sm text-pastel-muted leading-relaxed">
+                        <p><strong class="text-pastel-ink">1. Kapan dimulai:</strong> Apabila keluar darah melebihi batas maksimal masa haid (umumnya lebih dari 15 hari berturut-turut) atau keluar di luar kebiasaan masa haid dan masa suci minimal (15 hari).</p>
+                        <p><strong class="text-pastel-ink">2. Ciri-ciri pembeda:</strong> Darah haid umumnya berwarna merah kehitaman/gelap, lebih kental, berbau khas, serta keluar pada masa siklusnya. Sedangkan darah istihadhah umumnya berwarna merah segar/terang, lebih encer seperti darah luka, tidak berbau khas haid, dan keluar terus-menerus di luar waktu haid.</p>
+                        <p><strong class="text-pastel-ink">3. Ketentuan ibadah:</strong> Wanita yang mengalami istihadhah tetap wajib sholat dan berpuasa, berwudhu setiap kali hendak masuk waktu sholat, serta membersihkan/menahan darah seperlunya.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleWajibSholat(sholatId) {
+            const p = getActiveProfile();
+            if (!p) return;
+            const todayKey = toDateKey(new Date());
+            const haidInfo = getHaidCycleSummary(p);
+            if (p.category === 'muslimah' && haidInfo.isTodayHaid && !haidInfo.isIstihadhah) {
+                showToast('Hari ini sedang Libur Sholat');
+                return;
+            }
+            const dayLog = ensureDayLog(p, todayKey);
+            dayLog.wajib[sholatId] = !dayLog.wajib[sholatId];
+            saveAppState();
+            renderAll();
+        }
+
+        function toggleSunnahItem(sunnahId) {
+            const p = getActiveProfile();
+            if (!p) return;
+            const todayKey = toDateKey(new Date());
+            const dayLog = ensureDayLog(p, todayKey);
+            dayLog.sunnah[sunnahId] = !dayLog.sunnah[sunnahId];
+            saveAppState();
+            renderAll();
+        }
+
+        function calculateStreak(profile) {
+            let streak = 0;
+            const cursor = new Date();
+            while (true) {
+                const key = toDateKey(cursor);
+                const log = profile.logs?.[key];
+                const isHaidDay = profile.category === 'muslimah' && Array.isArray(profile.haidDates) && profile.haidDates.includes(key);
+                const wajibCount = log?.wajib ? Object.values(log.wajib).filter(Boolean).length : 0;
+                const sunnahCount = log?.sunnah ? Object.values(log.sunnah).filter(Boolean).length : 0;
+                if (isHaidDay || wajibCount > 0 || sunnahCount > 0) {
+                    streak++;
+                    cursor.setDate(cursor.getDate() - 1);
+                } else {
+                    break;
+                }
+            }
+            return streak;
+        }
+
+        function renderSholatTracker(profile) {
+            const today = new Date();
+            const todayKey = toDateKey(today);
+            const dayLog = ensureDayLog(profile, todayKey);
+            const haidInfo = getHaidCycleSummary(profile);
+            const isLiburSholat = profile.category === 'muslimah' && haidInfo.isTodayHaid && !haidInfo.isIstihadhah;
+
+            const doneCount = isLiburSholat ? 5 : WAJIB_SHOLAT.filter(s => dayLog.wajib[s.id]).length;
+            const percent = Math.round((doneCount / 5) * 100);
+            const sunnahDone = SUNNAH_ITEMS.filter(s => dayLog.sunnah[s.id]).length;
+
+            const banner = document.getElementById('sholat-summary-banner');
+            const kicker = document.getElementById('sholat-banner-kicker');
+            const countEl = document.getElementById('sholat-done-count');
+            const subEl = document.getElementById('sholat-banner-sub');
+            const pctLabel = document.getElementById('sholat-percent-label');
+            const barEl = document.getElementById('sholat-progress-bar');
+
+            if (isLiburSholat) {
+                banner.className = 'rounded-3xl p-4 sm:p-6 text-white shadow-soft interactive-card relative overflow-hidden bg-gradient-to-br from-pastel-rose to-pastel-roseDark';
+                kicker.textContent = 'Status Menstruasi • Libur Sholat';
+                countEl.textContent = 'Libur Sholat';
+                subEl.textContent = `Hari ke-${haidInfo.consecutiveDays} — Tetap semangat dzikir & doa harian`;
+                pctLabel.textContent = 'Uzur';
+                barEl.style.width = '100%';
+            } else {
+                banner.className = 'rounded-3xl p-4 sm:p-6 text-white shadow-soft interactive-card relative overflow-hidden bg-gradient-to-br from-pastel-sage to-pastel-sageDark';
+                kicker.textContent = 'Progress Sholat Wajib Hari Ini';
+                countEl.textContent = `${doneCount}/5`;
+                subEl.textContent = doneCount === 5 ? 'MasyaAllah, sholat wajib 5 waktu lengkap!' : 'Ayo lengkapi sholat wajib 5 waktu hari ini';
+                pctLabel.textContent = `${percent}%`;
+                barEl.style.width = `${percent}%`;
+            }
+
+            const wajibGrid = document.getElementById('wajib-sholat-list');
+            wajibGrid.innerHTML = WAJIB_SHOLAT.map(s => {
+                const checked = isLiburSholat ? false : !!dayLog.wajib[s.id];
+                return `<button type="button" onclick="toggleWajibSholat('${s.id}')" class="sholat-card-item w-full text-left rounded-2xl p-3.5 border transition cursor-pointer ${checked ? 'bg-pastel-sageLight/80 border-pastel-sage' : 'bg-white border-pastel-warm hover:bg-pastel-cream'}">
+                    <div class="flex items-center justify-between gap-2 mb-2">
+                        <span class="w-8 h-8 rounded-xl ${s.badgeBg} ${s.badgeText} flex items-center justify-center shrink-0">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                        </span>
+                        <span class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-extrabold ${isLiburSholat ? 'bg-pastel-roseLight text-pastel-roseDark' : checked ? 'bg-pastel-sage text-white' : 'border border-pastel-warm text-pastel-muted'}">
+                            ${isLiburSholat ? '—' : checked ? '✓' : ''}
+                        </span>
+                    </div>
+                    <p class="text-sm font-extrabold text-pastel-ink">${s.name}</p>
+                    <p class="text-[11px] text-pastel-muted mt-0.5">${isLiburSholat ? 'Libur Sholat' : checked ? 'Sudah ditunaikan' : s.hint}</p>
+                </button>`;
+            }).join('');
+
+            const sunnahBadge = document.getElementById('sunnah-counter-badge');
+            sunnahBadge.textContent = `${sunnahDone}/${SUNNAH_ITEMS.length} Selesai`;
+
+            const sunnahGrid = document.getElementById('sunnah-list');
+            sunnahGrid.innerHTML = SUNNAH_ITEMS.map(item => {
+                const done = !!dayLog.sunnah[item.id];
+                return `<button type="button" onclick="toggleSunnahItem('${item.id}')" class="sholat-card-item w-full text-left rounded-2xl p-3.5 border flex items-center justify-between gap-3 transition cursor-pointer ${done ? 'bg-pastel-butterLight/75 border-pastel-butter' : 'bg-white border-pastel-warm hover:bg-pastel-cream'}">
+                    <div class="min-w-0">
+                        <p class="text-xs sm:text-sm font-extrabold text-pastel-ink truncate">${item.title}</p>
+                        <p class="text-[11px] text-pastel-muted truncate">${item.desc}</p>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-xl text-[11px] font-extrabold shrink-0 ${done ? 'bg-pastel-butterDark text-white' : 'bg-pastel-cream text-pastel-muted'}">
+                        ${done ? '✓ Selesai' : `+${item.points} pts`}
+                    </span>
+                </button>`;
+            }).join('');
+
+            const sunnahTotalPoints = SUNNAH_ITEMS.reduce((acc, item) => acc + (dayLog.sunnah[item.id] ? item.points : 0), 0);
+            const imanScore = Math.min(100, (isLiburSholat ? 45 : doneCount * 11) + sunnahTotalPoints);
+            const circle = document.getElementById('iman-circle-progress');
+            const circumference = 251.2;
+            if (circle) {
+                circle.style.strokeDashoffset = String(circumference - (imanScore / 100) * circumference);
+            }
+            document.getElementById('iman-circle-percent').textContent = `${imanScore}%`;
+            document.getElementById('iman-status-title').textContent = imanScore >= 80 ? 'MasyaAllah, Istiqamah!' : imanScore >= 40 ? 'Terus Jaga Ritme Baik' : 'Awal Langkah Baik';
+            document.getElementById('iman-status-desc').textContent = isLiburSholat ? 'Tetap berzikir, berdoa & menjaga amalan harian.' : 'Gabungan capaian sholat wajib & amalan sunnah hari ini.';
+
+            // Riwayat 7 hari terakhir
+            const histContainer = document.getElementById('history-7-days');
+            const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+            const cards7 = [];
+            for (let offset = 6; offset >= 0; offset--) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - offset);
+                const k = toDateKey(d);
+                const isH = profile.category === 'muslimah' && haidInfo.haidSet.has(k);
+                const wCount = profile.logs?.[k]?.wajib ? Object.values(profile.logs[k].wajib).filter(Boolean).length : 0;
+                cards7.push(`<div class="rounded-2xl p-2 border ${isH ? 'bg-pastel-roseLight border-pastel-rose/40' : wCount === 5 ? 'bg-pastel-sageLight border-pastel-sage/40' : 'bg-pastel-cream/70 border-pastel-warm'}">
+                    <p class="text-[10px] font-bold text-pastel-muted">${dayNames[d.getDay()]}</p>
+                    <p class="text-xs font-extrabold text-pastel-ink my-0.5">${d.getDate()}</p>
+                    <p class="text-[10px] font-extrabold ${isH ? 'text-pastel-roseDark' : wCount === 5 ? 'text-pastel-sageDark' : 'text-pastel-muted'}">
+                        ${isH ? 'Libur' : `${wCount}/5`}
+                    </p>
+                </div>`);
+            }
+            histContainer.innerHTML = cards7.join('');
+
+            // Hijriah & Ramadhan Countdown
+            const hijri = getHijriInfo(today);
+            const sunnahInfo = getSunnahDayInfo(today, hijri);
+            document.getElementById('header-hijri-badge').textContent = hijri.full;
+            document.getElementById('header-gregorian-date').textContent = formatIndoDate(today);
+            document.getElementById('islamic-cal-hijri-full').textContent = hijri.full;
+            document.getElementById('islamic-cal-sunnah-badge').textContent = sunnahInfo.badge;
+            document.getElementById('islamic-cal-masehi-sub').textContent = `Masehi: ${formatIndoDate(today)}`;
+            document.getElementById('islamic-cal-sunnah-note').textContent = sunnahInfo.note;
+
+            const ramadhanStart = new Date(2027, 1, 8, 0, 0, 0);
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const daysLeft = Math.ceil((ramadhanStart - new Date(today.getFullYear(), today.getMonth(), today.getDate())) / msPerDay);
+            const daysEl = document.getElementById('ramadhan-countdown-days');
+            const titleEl = document.getElementById('ramadhan-countdown-title');
+            const ramadhanSubEl = document.getElementById('ramadhan-countdown-sub');
+            if (daysLeft > 0) {
+                daysEl.textContent = String(daysLeft);
+                titleEl.textContent = 'Menuju Ramadhan';
+                ramadhanSubEl.textContent = 'Perkiraan awal puasa: 8 Februari 2027';
+            } else if (daysLeft === 0) {
+                daysEl.textContent = '0';
+                titleEl.textContent = 'Marhaban Ya Ramadhan!';
+                ramadhanSubEl.textContent = 'Selamat menunaikan ibadah puasa Ramadhan';
+            } else {
+                daysEl.textContent = '✓';
+                titleEl.textContent = 'Ramadhan Telah Tiba';
+                ramadhanSubEl.textContent = 'Perkiraan awal puasa: 8 Februari 2027';
+            }
+        }
+
+        function renderHadithCard() {
+            const q = HADITH_QUOTES[hadithIndex % HADITH_QUOTES.length];
+            const textEl = document.getElementById('hadith-quote-text');
+            const srcEl = document.getElementById('hadith-quote-source');
+            const dotsEl = document.getElementById('hadith-dots');
+            if (textEl) textEl.textContent = q.text;
+            if (srcEl) srcEl.textContent = q.source;
+            if (dotsEl) {
+                dotsEl.innerHTML = HADITH_QUOTES.map((_, idx) => `<button onclick="setHadithSlide(${idx})" class="h-1.5 rounded-full transition-all cursor-pointer ${idx === (hadithIndex % HADITH_QUOTES.length) ? 'w-4 bg-pastel-butterDark' : 'w-1.5 bg-pastel-warm'}"></button>`).join('');
+            }
+        }
+
+        function setHadithSlide(idx) {
+            hadithIndex = idx;
+            renderHadithCard();
+        }
+
+        setInterval(() => {
+            hadithIndex = (hadithIndex + 1) % HADITH_QUOTES.length;
+            renderHadithCard();
+        }, 9000);
+
+        function getFilteredDoas(profile) {
+            return DOA_COLLECTION.filter(d => {
+                const isFav = profile?.favoriteDoas?.includes(d.id);
+                const matchesCat = doaCategory === 'Semua' || (doaCategory === 'Favorit' ? isFav : d.category === doaCategory);
+                const q = doaSearchQuery.trim().toLowerCase();
+                const matchesSearch = !q ||
+                    d.title.toLowerCase().includes(q) ||
+                    d.latin.toLowerCase().includes(q) ||
+                    d.meaning.toLowerCase().includes(q) ||
+                    d.category.toLowerCase().includes(q);
+                return matchesCat && matchesSearch;
+            });
+        }
+
+        function setDoaFilterCategory(cat) {
+            doaCategory = cat;
+            doaCardIndex = 0;
+            document.querySelectorAll('.doa-cat-btn').forEach(btn => {
+                const active = btn.id === `doa-cat-${cat}`;
+                btn.className = active
+                    ? 'doa-cat-btn px-3.5 py-1.5 rounded-full text-xs font-extrabold bg-pastel-lavender text-white shrink-0 cursor-pointer'
+                    : 'doa-cat-btn px-3.5 py-1.5 rounded-full text-xs font-bold bg-pastel-cream text-pastel-muted hover:text-pastel-ink shrink-0 cursor-pointer';
+            });
+            renderDoaSection();
+        }
+
+        function onDoaSearchInput(val) {
+            doaSearchQuery = val;
+            doaCardIndex = 0;
+            renderDoaSection();
+        }
+
+        function prevDoaCard() {
+            const p = getActiveProfile();
+            const list = getFilteredDoas(p);
+            if (!list.length) return;
+            doaCardIndex = (doaCardIndex - 1 + list.length) % list.length;
+            renderDoaSection();
+        }
+
+        function nextDoaCard() {
+            const p = getActiveProfile();
+            const list = getFilteredDoas(p);
+            if (!list.length) return;
+            doaCardIndex = (doaCardIndex + 1) % list.length;
+            renderDoaSection();
+        }
+
+        function toggleFavoriteDoa(doaId) {
+            const p = getActiveProfile();
+            if (!p) return;
+            p.favoriteDoas = p.favoriteDoas || [];
+            if (p.favoriteDoas.includes(doaId)) {
+                p.favoriteDoas = p.favoriteDoas.filter(id => id !== doaId);
+            } else {
+                p.favoriteDoas.push(doaId);
+            }
+            saveAppState();
+            renderDoaSection();
+        }
+
+        function toggleReadDoa(doaId) {
+            const p = getActiveProfile();
+            if (!p) return;
+            p.readDoas = p.readDoas || [];
+            if (p.readDoas.includes(doaId)) {
+                p.readDoas = p.readDoas.filter(id => id !== doaId);
+            } else {
+                p.readDoas.push(doaId);
+                showToast('Doa ditandai sudah dibaca');
+            }
+            saveAppState();
+            renderDoaSection();
+        }
+
+        function renderDoaSection() {
+            const p = getActiveProfile();
+            const list = getFilteredDoas(p);
+            const container = document.getElementById('doa-cards-container');
+            const counter = document.getElementById('doa-card-counter');
+            if (!container || !counter) return;
+
+            if (!list.length) {
+                counter.textContent = '0 / 0';
+                container.innerHTML = `<div class="bg-white rounded-3xl p-6 border border-pastel-warm text-center text-xs text-pastel-muted">Tidak ada doa yang cocok dengan filter/pencarian.</div>`;
+                return;
+            }
+
+            if (doaCardIndex >= list.length) doaCardIndex = 0;
+            counter.textContent = `${doaCardIndex + 1} / ${list.length}`;
+
+            container.innerHTML = list.map((d, idx) => {
+                const isFav = p?.favoriteDoas?.includes(d.id);
+                const isRead = p?.readDoas?.includes(d.id);
+                const isFocused = idx === doaCardIndex;
+                return `<article class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-6 border ${isFocused ? 'border-pastel-lavender ring-2 ring-pastel-lavenderLight' : 'border-pastel-warm'} shadow-card space-y-3">
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <span class="inline-block text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-pastel-lavenderLight text-pastel-lavenderDark mb-1">${d.category}</span>
+                            <h3 class="text-base sm:text-lg font-extrabold text-pastel-ink">${d.title}</h3>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button onclick="toggleFavoriteDoa('${d.id}')" class="px-2.5 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer ${isFav ? 'bg-pastel-roseLight text-pastel-roseDark' : 'bg-pastel-cream text-pastel-muted'}">
+                                ${isFav ? '♥ Favorit' : '♡ Simpan'}
+                            </button>
+                            <button onclick="toggleReadDoa('${d.id}')" class="px-2.5 py-1.5 rounded-xl text-xs font-extrabold cursor-pointer ${isRead ? 'bg-pastel-sageLight text-pastel-sageDark' : 'bg-pastel-cream text-pastel-muted'}">
+                                ${isRead ? '✓ Dibaca' : 'Tandai'}
+                            </button>
+                        </div>
+                    </div>
+                    <p dir="rtl" class="font-arabic text-xl sm:text-2xl text-right text-pastel-ink leading-loose bg-pastel-cream/70 rounded-2xl p-3.5 border border-pastel-warm/70">${d.arabic}</p>
+                    <p class="text-xs sm:text-sm font-semibold text-pastel-sageDark italic">${d.latin}</p>
+                    <p class="text-xs sm:text-sm text-pastel-muted leading-relaxed">Artinya: "${d.meaning}"</p>
+                </article>`;
+            }).join('');
+        }
+
+        function toRad(deg) {
+            return (deg * Math.PI) / 180;
+        }
+
+        function toDeg(rad) {
+            return (rad * 180) / Math.PI;
+        }
+
+        function getActiveLocationInfo() {
+            if (customCoordsOverride) {
+                return customCoordsOverride;
+            }
+            const cityKey = appState.selectedCity || 'bekasi';
+            const city = PRAYER_CITIES[cityKey] || PRAYER_CITIES.bekasi;
+            return {
+                name: city.name,
+                lat: city.lat,
+                lng: city.lng,
+                tz: city.tz
+            };
+        }
+
+        function getDayOfYear(dateObj) {
+            const start = new Date(dateObj.getFullYear(), 0, 0);
+            const diff = dateObj - start + ((start.getTimezoneOffset() - dateObj.getTimezoneOffset()) * 60 * 1000);
+            return Math.floor(diff / (1000 * 60 * 60 * 24));
+        }
+
+        function formatHoursToHHMM(hoursFloat) {
+            let totalMins = Math.round(hoursFloat * 60);
+            totalMins = ((totalMins % 1440) + 1440) % 1440;
+            const h = Math.floor(totalMins / 60);
+            const m = totalMins % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        // Perhitungan posisi matahari & waktu sholat berbasis koordinat & zona waktu (GMT+7/+8/+9)
+        function computeDailyPrayerSchedule(dateObj, loc) {
+            const doy = getDayOfYear(dateObj);
+            const gamma = ((2 * Math.PI) / 365) * (doy - 1);
+
+            const eqTime = 229.18 * (
+                0.000075 +
+                0.001868 * Math.cos(gamma) -
+                0.032077 * Math.sin(gamma) -
+                0.014615 * Math.cos(2 * gamma) -
+                0.040849 * Math.sin(2 * gamma)
+            );
+
+            const decl =
+                0.006918 -
+                0.399912 * Math.cos(gamma) +
+                0.070257 * Math.sin(gamma) -
+                0.006758 * Math.cos(2 * gamma) +
+                0.000907 * Math.sin(2 * gamma) -
+                0.002697 * Math.cos(3 * gamma) +
+                0.00148 * Math.sin(3 * gamma);
+
+            const latRad = toRad(loc.lat);
+            const solarNoonMin = 720 - 4 * loc.lng - eqTime + loc.tz * 60;
+
+            function hourAngleForZenith(zenithDeg) {
+                const cosH = (Math.cos(toRad(zenithDeg)) - Math.sin(latRad) * Math.sin(decl)) /
+                    (Math.cos(latRad) * Math.cos(decl));
+                const clamped = Math.max(-1, Math.min(1, cosH));
+                return toDeg(Math.acos(clamped)) * 4;
+            }
+
+            const haSunrise = hourAngleForZenith(90.833);
+            const haFajr = hourAngleForZenith(110);   // ~20 deg below horizon
+            const haIsha = hourAngleForZenith(108);   // ~18 deg below horizon
+
+            const tanDiff = Math.abs(latRad - decl);
+            const asharZenith = toDeg(Math.atan(1 + Math.tan(toRad(tanDiff))));
+            const haAsr = hourAngleForZenith(90 - asharZenith);
+
+            // Koreksi ihtiyati 2 menit
+            const subuhMin = solarNoonMin - haFajr + 2;
+            const terbitMin = solarNoonMin - haSunrise;
+            const dzuhurMin = solarNoonMin + 2;
+            const asharMin = solarNoonMin + haAsr + 2;
+            const maghribMin = solarNoonMin + haSunrise + 2;
+            const isyaMin = solarNoonMin + haIsha + 2;
+
+            return {
+                subuh: formatHoursToHHMM(subuhMin / 60),
+                terbit: formatHoursToHHMM(terbitMin / 60),
+                dzuhur: formatHoursToHHMM(dzuhurMin / 60),
+                ashar: formatHoursToHHMM(asharMin / 60),
+                maghrib: formatHoursToHHMM(maghribMin / 60),
+                isya: formatHoursToHHMM(isyaMin / 60),
+                rawMinutes: {
+                    subuh: subuhMin,
+                    terbit: terbitMin,
+                    dzuhur: dzuhurMin,
+                    ashar: asharMin,
+                    maghrib: maghribMin,
+                    isya: isyaMin
+                }
+            };
+        }
+
+        function onChangePrayerCity(cityKey) {
+            customCoordsOverride = null;
+            appState.selectedCity = cityKey;
+            saveAppState();
+            renderPrayerSchedule();
+            showToast(`Wilayah diubah ke ${PRAYER_CITIES[cityKey]?.name || cityKey}`);
+        }
+
+        function useGpsForPrayerSchedule() {
+            if (!navigator.geolocation) {
+                showToast('Browser tidak mendukung GPS.');
+                return;
+            }
+            showToast('Mendeteksi lokasi GPS...');
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    const tz = Math.round(longitude / 15);
+                    customCoordsOverride = {
+                        name: `Lokasi GPS (${latitude.toFixed(2)}, ${longitude.toFixed(2)})`,
+                        lat: latitude,
+                        lng: longitude,
+                        tz: Math.max(7, Math.min(9, tz))
+                    };
+                    renderPrayerSchedule();
+                    showToast('Jadwal disesuaikan dengan lokasi GPS');
+                },
+                () => {
+                    showToast('Izin lokasi ditolak, memakai pilihan kota.');
+                }
+            );
+        }
+
+        function setScheduleViewMode(mode) {
+            scheduleViewMode = mode;
+            const todayBtn = document.getElementById('jadwal-mode-today');
+            const thirtyBtn = document.getElementById('jadwal-mode-30days');
+            const todayPanel = document.getElementById('jadwal-today-panel');
+            const thirtyPanel = document.getElementById('jadwal-30days-panel');
+
+            if (mode === 'today') {
+                todayBtn.className = 'px-4 py-1.5 rounded-xl text-xs font-extrabold bg-pastel-sage text-white cursor-pointer';
+                thirtyBtn.className = 'px-4 py-1.5 rounded-xl text-xs font-bold text-pastel-muted hover:text-pastel-ink cursor-pointer';
+                todayPanel.classList.remove('hidden');
+                thirtyPanel.classList.add('hidden');
+            } else {
+                thirtyBtn.className = 'px-4 py-1.5 rounded-xl text-xs font-extrabold bg-pastel-sage text-white cursor-pointer';
+                todayBtn.className = 'px-4 py-1.5 rounded-xl text-xs font-bold text-pastel-muted hover:text-pastel-ink cursor-pointer';
+                thirtyPanel.classList.remove('hidden');
+                todayPanel.classList.add('hidden');
+            }
+            renderPrayerSchedule();
+        }
+
+        function getNextPrayerTarget(nowDate, loc) {
+            const todaySched = computeDailyPrayerSchedule(nowDate, loc);
+            const nowMinutes = nowDate.getHours() * 60 + nowDate.getMinutes() + nowDate.getSeconds() / 60;
+            const items = [
+                { key: 'subuh', label: 'Subuh', mins: todaySched.rawMinutes.subuh, timeStr: todaySched.subuh },
+                { key: 'dzuhur', label: 'Dzuhur', mins: todaySched.rawMinutes.dzuhur, timeStr: todaySched.dzuhur },
+                { key: 'ashar', label: 'Ashar', mins: todaySched.rawMinutes.ashar, timeStr: todaySched.ashar },
+                { key: 'maghrib', label: 'Maghrib', mins: todaySched.rawMinutes.maghrib, timeStr: todaySched.maghrib },
+                { key: 'isya', label: 'Isya', mins: todaySched.rawMinutes.isya, timeStr: todaySched.isya }
+            ];
+
+            for (const item of items) {
+                if (item.mins > nowMinutes) {
+                    const diffSec = Math.max(0, Math.round((item.mins - nowMinutes) * 60));
+                    return { ...item, diffSec, nextKey: item.key };
+                }
+            }
+
+            const tomorrow = new Date(nowDate);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowSched = computeDailyPrayerSchedule(tomorrow, loc);
+            const diffSec = Math.max(0, Math.round((1440 - nowMinutes + tomorrowSched.rawMinutes.subuh) * 60));
+            return {
+                key: 'subuh',
+                label: 'Subuh (Besok)',
+                mins: tomorrowSched.rawMinutes.subuh + 1440,
+                timeStr: tomorrowSched.subuh,
+                diffSec,
+                nextKey: 'subuh'
+            };
+        }
+
+        function formatCountdownHMS(totalSec) {
+            const h = Math.floor(totalSec / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function renderPrayerSchedule() {
+            const now = new Date();
+            const loc = getActiveLocationInfo();
+            const selectEl = document.getElementById('jadwal-city-select');
+            if (selectEl && !customCoordsOverride) {
+                selectEl.value = appState.selectedCity || 'bekasi';
+            }
+
+            const tzLabel = `GMT+${String(loc.tz).padStart(2, '0')}:00`;
+            const subEl = document.getElementById('jadwal-city-subtitle');
+            if (subEl) subEl.textContent = `${loc.name} • Zona ${tzLabel}`;
+
+            const dateLabel = document.getElementById('jadwal-date-label');
+            if (dateLabel) dateLabel.textContent = `${formatIndoDate(now)} • ${tzLabel}`;
+
+            const sched = computeDailyPrayerSchedule(now, loc);
+            const nextInfo = getNextPrayerTarget(now, loc);
+
+            const slots = [
+                { key: 'subuh', label: 'Subuh', time: sched.subuh },
+                { key: 'terbit', label: 'Terbit', time: sched.terbit },
+                { key: 'dzuhur', label: 'Dzuhur', time: sched.dzuhur },
+                { key: 'ashar', label: 'Ashar', time: sched.ashar },
+                { key: 'maghrib', label: 'Maghrib', time: sched.maghrib },
+                { key: 'isya', label: 'Isya', time: sched.isya }
+            ];
+
+            const sixSlotsEl = document.getElementById('jadwal-6-slots');
+            if (sixSlotsEl) {
+                sixSlotsEl.innerHTML = slots.map(sl => {
+                    const isNext = sl.key === nextInfo.nextKey;
+                    return `<div class="rounded-2xl p-3.5 border transition ${isNext ? 'bg-pastel-sageLight border-pastel-sage ring-2 ring-pastel-sage/25' : 'bg-pastel-cream/70 border-pastel-warm'}">
+                        <div class="flex items-center justify-between gap-1 mb-1">
+                            <span class="text-xs font-bold ${isNext ? 'text-pastel-sageDark' : 'text-pastel-muted'}">${sl.label}</span>
+                            ${isNext ? '<span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-pastel-sageDark text-white">Berikutnya</span>' : ''}
+                        </div>
+                        <p class="text-lg sm:text-xl font-extrabold tabular-nums ${isNext ? 'text-pastel-sageDark' : 'text-pastel-ink'}">${sl.time}</p>
+                    </div>`;
+                }).join('');
+            }
+
+            const tbody = document.getElementById('jadwal-30days-tbody');
+            if (tbody) {
+                const rows = [];
+                for (let i = 0; i < 30; i++) {
+                    const d = new Date(now);
+                    d.setDate(d.getDate() + i);
+                    const s = computeDailyPrayerSchedule(d, loc);
+                    rows.push(`<tr class="${i === 0 ? 'bg-pastel-sageLight/50 font-bold' : ''}">
+                        <td class="py-2 px-2.5 whitespace-nowrap">${formatShortIndoDate(d)}</td>
+                        <td class="py-2 px-2 tabular-nums">${s.subuh}</td>
+                        <td class="py-2 px-2 tabular-nums">${s.terbit}</td>
+                        <td class="py-2 px-2 tabular-nums">${s.dzuhur}</td>
+                        <td class="py-2 px-2 tabular-nums">${s.ashar}</td>
+                        <td class="py-2 px-2 tabular-nums">${s.maghrib}</td>
+                        <td class="py-2 px-2 tabular-nums">${s.isya}</td>
+                    </tr>`);
+                }
+                tbody.innerHTML = rows.join('');
+            }
+
+            updatePrayerCountdownDisplays();
+        }
+
+        function updatePrayerCountdownDisplays() {
+            const now = new Date();
+            const loc = getActiveLocationInfo();
+            const nextInfo = getNextPrayerTarget(now, loc);
+            const countdownStr = formatCountdownHMS(nextInfo.diffSec);
+
+            const dashName = document.getElementById('dash-next-prayer-name');
+            const dashSub = document.getElementById('dash-next-prayer-sub');
+            const dashCd = document.getElementById('dash-prayer-countdown');
+            if (dashName) dashName.textContent = nextInfo.label;
+            if (dashSub) dashSub.textContent = `Pukul ${nextInfo.timeStr} • ${loc.name}`;
+            if (dashCd) dashCd.textContent = countdownStr;
+
+            const jadName = document.getElementById('jadwal-next-name');
+            const jadDetail = document.getElementById('jadwal-next-detail');
+            const jadCd = document.getElementById('jadwal-countdown');
+            if (jadName) jadName.textContent = nextInfo.label;
+            if (jadDetail) jadDetail.textContent = `Pukul ${nextInfo.timeStr} • ${loc.name}`;
+            if (jadCd) jadCd.textContent = countdownStr;
+        }
+
+        function computeQiblaBearingAndDistance(lat, lng) {
+            const kaabaLat = 21.4225;
+            const kaabaLng = 39.8262;
+            const phi1 = toRad(lat);
+            const phi2 = toRad(kaabaLat);
+            const dLambda = toRad(kaabaLng - lng);
+
+            const y = Math.sin(dLambda) * Math.cos(phi2);
+            const x = Math.cos(phi1) * Math.sin(phi2) - Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLambda);
+            const bearing = (toDeg(Math.atan2(y, x)) + 360) % 360;
+
+            const dPhi = phi2 - phi1;
+            const a = Math.sin(dPhi / 2) ** 2 + Math.cos(phi1) * Math.cos(phi2) * (Math.sin(dLambda / 2) ** 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distanceKm = Math.round(6371 * c);
+
+            return { bearing, distanceKm };
+        }
+
+        function setManualCompassHeading(degVal) {
+            manualCompassHeading = ((parseFloat(degVal) || 0) % 360 + 360) % 360;
+            renderQiblaDashboard();
+        }
+
+        function enableDeviceCompass() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(state => {
+                        if (state === 'granted') {
+                            window.addEventListener('deviceorientation', handleDeviceOrientation);
+                            showToast('Sensor kompas HP aktif');
+                        } else {
+                            showToast('Izin sensor kompas tidak diberikan');
+                        }
+                    })
+                    .catch(() => showToast('Gunakan slider simulasi kompas'));
+            } else if ('ondeviceorientation' in window) {
+                window.addEventListener('deviceorientation', handleDeviceOrientation);
+                showToast('Mencoba membaca sensor kompas perangkat');
+            } else {
+                showToast('Perangkat tidak mendukung kompas otomatis, gunakan slider');
+            }
+        }
+
+        function handleDeviceOrientation(e) {
+            const heading = typeof e.webkitCompassHeading === 'number'
+                ? e.webkitCompassHeading
+                : (typeof e.alpha === 'number' ? (360 - e.alpha) % 360 : null);
+            if (heading !== null && !Number.isNaN(heading)) {
+                manualCompassHeading = heading;
+                const slider = document.getElementById('qibla-heading-slider');
+                if (slider) slider.value = String(Math.round(heading));
+                renderQiblaDashboard();
+            }
+        }
+
+        function renderQiblaDashboard() {
+            const loc = getActiveLocationInfo();
+            const { bearing, distanceKm } = computeQiblaBearingAndDistance(loc.lat, loc.lng);
+            const relativeRotation = ((bearing - manualCompassHeading) % 360 + 360) % 360;
+
+            const rotator = document.getElementById('qibla-needle-rotator');
+            if (rotator) rotator.style.transform = `rotate(${relativeRotation.toFixed(1)}deg)`;
+
+            const centerAngle = document.getElementById('qibla-bearing-center');
+            const angleVal = document.getElementById('qibla-angle-value');
+            const cityTitle = document.getElementById('qibla-city-title');
+            const coordsText = document.getElementById('qibla-coords-text');
+            const distEl = document.getElementById('qibla-distance-value');
+            const headingLabel = document.getElementById('qibla-heading-label');
+
+            if (centerAngle) centerAngle.textContent = `${Math.round(bearing)}°`;
+            if (angleVal) angleVal.textContent = `${bearing.toFixed(1)}°`;
+            if (cityTitle) cityTitle.textContent = loc.name;
+            if (coordsText) coordsText.textContent = `Koordinat: ${loc.lat.toFixed(4)}° LU/LS, ${loc.lng.toFixed(4)}° BT`;
+            if (distEl) distEl.textContent = `${distanceKm.toLocaleString('id-ID')} km`;
+            if (headingLabel) headingLabel.textContent = `Arah HP: ${Math.round(manualCompassHeading)}°`;
+        }
+
+        function changeCalendarMonth(delta) {
+            calendarMonthOffset += delta;
+            renderAll();
+        }
+
+        function resetCalendarToToday() {
+            calendarMonthOffset = 0;
+            selectedCalendarDateKey = toDateKey(new Date());
+            renderAll();
+        }
+
+        function selectCalendarDate(key) {
+            selectedCalendarDateKey = key;
+            renderIslamicCalendar(getActiveProfile());
+        }
+
+        function renderIslamicCalendar(profile) {
+            const now = new Date();
+            const viewDate = new Date(now.getFullYear(), now.getMonth() + calendarMonthOffset, 1);
+            const year = viewDate.getFullYear();
+            const month = viewDate.getMonth();
+            const firstDow = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const todayKey = toDateKey(now);
+            const haidInfo = getHaidCycleSummary(profile);
+
+            const headingEl = document.getElementById('islamic-month-heading');
+            if (headingEl) {
+                headingEl.textContent = viewDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+            }
+
+            const legendHaid = document.getElementById('cal-legend-haid');
+            if (legendHaid) {
+                legendHaid.classList.toggle('hidden', profile?.category !== 'muslimah');
+            }
+
+            const grid = document.getElementById('islamic-calendar-grid');
+            if (!grid) return;
+
+            let html = '';
+            for (let i = 0; i < firstDow; i++) {
+                html += `<div class="h-14 sm:h-16 rounded-2xl bg-pastel-cream/40"></div>`;
+            }
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateObj = new Date(year, month, d);
+                const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const hijri = getHijriInfo(dateObj);
+                const sunnah = getSunnahDayInfo(dateObj, hijri);
+                const isHaid = profile?.category === 'muslimah' && haidInfo.haidSet.has(key);
+                const wCount = profile?.logs?.[key]?.wajib ? Object.values(profile.logs[key].wajib).filter(Boolean).length : 0;
+                const isSunnahDay = sunnah.badge !== 'Hari Biasa';
+                const isToday = key === todayKey;
+                const isSelected = key === selectedCalendarDateKey;
+
+                let bgClass = 'bg-white border-pastel-warm text-pastel-ink hover:bg-pastel-cream';
+                if (isHaid) {
+                    bgClass = 'bg-pastel-roseLight border-pastel-rose text-pastel-roseDark';
+                } else if (wCount === 5) {
+                    bgClass = 'bg-pastel-sageLight border-pastel-sage/50 text-pastel-sageDark';
+                } else if (isSunnahDay) {
+                    bgClass = 'bg-pastel-butterLight/75 border-pastel-butter/60 text-pastel-ink';
+                }
+
+                const ringClass = isSelected ? 'ring-2 ring-pastel-sageDark' : (isToday ? 'ring-2 ring-pastel-ink/40' : '');
+
+                html += `<button type="button" onclick="selectCalendarDate('${key}')" class="h-14 sm:h-16 rounded-2xl border ${bgClass} ${ringClass} p-1 flex flex-col items-center justify-center transition cursor-pointer">
+                    <span class="text-xs sm:text-sm font-extrabold leading-none">${d}</span>
+                    <span class="text-[9px] font-bold text-pastel-muted mt-0.5">${hijri.day} H</span>
+                    <span class="text-[9px] font-extrabold leading-none mt-0.5">${isHaid ? 'Libur' : wCount > 0 ? `${wCount}/5` : isSunnahDay ? 'Sunnah' : ''}</span>
+                </button>`;
+            }
+            grid.innerHTML = html;
+
+            const detailBox = document.getElementById('selected-calendar-detail');
+            if (detailBox && selectedCalendarDateKey) {
+                const selDate = parseDateKey(selectedCalendarDateKey);
+                const selHijri = getHijriInfo(selDate);
+                const selSunnah = getSunnahDayInfo(selDate, selHijri);
+                const selHaid = profile?.category === 'muslimah' && haidInfo.haidSet.has(selectedCalendarDateKey);
+                const selWajib = profile?.logs?.[selectedCalendarDateKey]?.wajib ? Object.values(profile.logs[selectedCalendarDateKey].wajib).filter(Boolean).length : 0;
+                detailBox.innerHTML = `<div class="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <p class="text-[10px] font-extrabold uppercase text-pastel-skyDark">${selHijri.full}</p>
+                        <h4 class="text-sm sm:text-base font-extrabold text-pastel-ink">${formatIndoDate(selDate)}</h4>
+                        <p class="text-xs text-pastel-muted mt-0.5">${selSunnah.note}</p>
+                    </div>
+                    <span class="px-3 py-1.5 rounded-2xl text-xs font-extrabold ${selHaid ? 'bg-pastel-roseLight text-pastel-roseDark' : 'bg-pastel-sageLight text-pastel-sageDark'}">
+                        ${selHaid ? 'Libur Sholat' : `Sholat Wajib: ${selWajib}/5`}
+                    </span>
+                </div>`;
+            }
+        }
+
+        function renderProfileSettings(profile) {
+            if (!profile) return;
+            const nameInput = document.getElementById('edit-profile-name');
+            const pinInput = document.getElementById('edit-profile-pin');
+            if (nameInput) nameInput.value = profile.name;
+            if (pinInput) pinInput.value = '';
+        }
+
+        function saveProfileSettings() {
+            const p = getActiveProfile();
+            if (!p) return;
+            const newName = document.getElementById('edit-profile-name').value.trim();
+            const newPin = document.getElementById('edit-profile-pin').value.trim();
+            if (!newName) {
+                showToast('Nama tidak boleh kosong.');
+                return;
+            }
+            if (newPin && !/^\d{4}$/.test(newPin)) {
+                showToast('PIN baru harus 4 angka.');
+                return;
+            }
+            p.name = newName;
+            if (newPin) p.pin = newPin;
+            saveAppState();
+            showToast('Pengaturan profil disimpan!');
+            renderAll();
+        }
+
+        function deleteCurrentProfile() {
+            if (appState.profiles.length <= 1) {
+                showToast('Minimal harus ada 1 profil tersimpan.');
+                return;
+            }
+            const idx = appState.profiles.findIndex(p => p.id === activeProfileId);
+            if (idx === -1) return;
+            const removedName = appState.profiles[idx].name;
+            appState.profiles.splice(idx, 1);
+            saveAppState();
+            showToast(`Profil ${removedName} dihapus.`);
+            logoutProfile();
+        }
+
+        function renderAll() {
+            const profile = getActiveProfile();
+            if (!profile) return;
+
+            document.getElementById('header-user-name').textContent = profile.name;
+            const isMuslimah = profile.category === 'muslimah';
+            document.getElementById('header-category-badge').textContent = isMuslimah ? 'Muslimah' : 'Umum / Ikhwan';
+            document.getElementById('header-category-badge').className = isMuslimah
+                ? 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-pastel-roseLight text-pastel-roseDark'
+                : 'text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-pastel-sageLight text-pastel-sageDark';
+            document.getElementById('header-avatar').innerHTML = renderAvatarSVG(profile.accent || 'sage', isMuslimah);
+            document.getElementById('header-streak-count').textContent = String(calculateStreak(profile));
+
+            const mensNavBtn = document.getElementById('nav-btn-menstruasi');
+            if (mensNavBtn) {
+                mensNavBtn.classList.toggle('hidden', !isMuslimah);
+            }
+            if (!isMuslimah && activeTab === 'menstruasi') {
+                switchTab('beranda');
+                return;
+            }
+
+            renderHaidDashboardCard(profile);
+            renderSholatTracker(profile);
+            renderHadithCard();
+            renderDoaSection();
+            renderPrayerSchedule();
+            renderQiblaDashboard();
+            renderIslamicCalendar(profile);
+            renderMenstruasiTab(profile);
+            renderProfileSettings(profile);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderProfileSelection();
+            renderHadithCard();
+            prayerCountdownInterval = setInterval(() => {
+                if (activeProfileId) {
+                    updatePrayerCountdownDisplays();
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
