@@ -711,22 +711,16 @@
                 <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-6 border border-pastel-warm shadow-card space-y-4">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <h3 id="islamic-month-heading" class="text-base sm:text-lg font-extrabold text-pastel-ink">November 2026</h3>
-                        <div class="flex flex-wrap items-center gap-2 text-[11px] font-bold">
-                            <span class="px-2.5 py-1 rounded-full bg-pastel-sageLight text-pastel-sageDark">Sholat Tercatat</span>
-                            <span id="cal-legend-haid" class="hidden px-2.5 py-1 rounded-full bg-pastel-roseLight text-pastel-roseDark">Libur Sholat</span>
-                            <span class="px-2.5 py-1 rounded-full bg-pastel-butterLight text-pastel-butterDark">Hari Sunnah</span>
+                        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-bold">
+                            <span class="px-2.5 py-1 rounded-full bg-pastel-butterLight text-pastel-butterDark">Puasa Sunnah</span>
+                            <span class="px-2.5 py-1 rounded-full bg-pastel-sageLight text-pastel-sageDark">Hari Raya Islam</span>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-7 gap-1.5 text-center text-[11px] font-extrabold text-pastel-muted">
+                    <div class="grid grid-cols-7 gap-1 sm:gap-1.5 text-center text-[10px] sm:text-[11px] font-extrabold text-pastel-muted">
                         <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
                     </div>
-                    <div id="islamic-calendar-grid" class="grid grid-cols-7 gap-1.5"></div>
-                </div>
-
-                <!-- Detail Tanggal Terpilih -->
-                <div id="selected-calendar-detail" class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-5 border border-pastel-warm shadow-card">
-                    <p class="text-xs font-bold text-pastel-muted">Ketuk salah satu tanggal pada kalender untuk melihat detail Hijriah &amp; catatan ibadahnya.</p>
+                    <div id="islamic-calendar-grid" class="grid grid-cols-7 gap-1 sm:gap-1.5"></div>
                 </div>
             </main>
 
@@ -825,6 +819,7 @@
                 accent: 'rose',
                 haidDates: ['2026-11-06'],
                 cycleLength: 28,
+                mensMonthOffset: 0,
                 logs: {},
                 favoriteDoas: ['doa-pagi-petang', 'ayat-kursi'],
                 readDoas: []
@@ -837,6 +832,7 @@
                 accent: 'sage',
                 haidDates: [],
                 cycleLength: 28,
+                mensMonthOffset: 0,
                 logs: {},
                 favoriteDoas: ['doa-sebelum-makan'],
                 readDoas: []
@@ -971,8 +967,17 @@
                 if (raw) {
                     const parsed = JSON.parse(raw);
                     if (parsed && Array.isArray(parsed.profiles) && parsed.profiles.length > 0) {
+                        const normalizedProfiles = parsed.profiles.map(p => ({
+                            ...p,
+                            haidDates: Array.isArray(p.haidDates) ? [...p.haidDates] : [],
+                            cycleLength: typeof p.cycleLength === 'number' ? p.cycleLength : 28,
+                            mensMonthOffset: typeof p.mensMonthOffset === 'number' ? p.mensMonthOffset : 0,
+                            logs: p.logs && typeof p.logs === 'object' ? { ...p.logs } : {},
+                            favoriteDoas: Array.isArray(p.favoriteDoas) ? [...p.favoriteDoas] : [],
+                            readDoas: Array.isArray(p.readDoas) ? [...p.readDoas] : []
+                        }));
                         return {
-                            profiles: parsed.profiles,
+                            profiles: normalizedProfiles,
                             selectedCity: parsed.selectedCity || 'bekasi'
                         };
                     }
@@ -988,7 +993,16 @@
 
         function saveAppState() {
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+                const snapshot = {
+                    profiles: appState.profiles.map(p => ({
+                        ...p,
+                        haidDates: Array.isArray(p.haidDates) ? [...p.haidDates] : [],
+                        cycleLength: typeof p.cycleLength === 'number' ? p.cycleLength : 28,
+                        mensMonthOffset: typeof p.mensMonthOffset === 'number' ? p.mensMonthOffset : 0
+                    })),
+                    selectedCity: appState.selectedCity || 'bekasi'
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
             } catch (err) {
                 console.warn('Gagal menyimpan state ke localStorage:', err);
             }
@@ -1091,13 +1105,50 @@
         function getSunnahDayInfo(dateObj, hijriInfo) {
             const dow = dateObj.getDay();
             const isAyyamulBidh = [13, 14, 15].includes(hijriInfo.day);
-            const badges = [];
-            if (dow === 1 || dow === 4) badges.push('Sunnah Senin–Kamis');
-            if (dow === 5) badges.push('Hari Jum\'at (Al-Kahfi)');
-            if (isAyyamulBidh) badges.push('Ayyamul Bidh (13–15 H)');
+            let holidayName = '';
+
+            if (hijriInfo.month === 1 && hijriInfo.day === 1) {
+                holidayName = 'Tahun Baru Islam (1 Muharram)';
+            } else if (hijriInfo.month === 1 && hijriInfo.day === 10) {
+                holidayName = 'Puasa Asyura (10 Muharram)';
+            } else if (hijriInfo.month === 3 && hijriInfo.day === 12) {
+                holidayName = 'Maulid Nabi Muhammad SAW';
+            } else if (hijriInfo.month === 7 && hijriInfo.day === 27) {
+                holidayName = 'Isra Mi\'raj';
+            } else if (hijriInfo.month === 10 && hijriInfo.day === 1) {
+                holidayName = 'Hari Raya Idul Fitri (1 Syawal)';
+            } else if (hijriInfo.month === 12 && hijriInfo.day === 9) {
+                holidayName = 'Puasa Arafah (9 Dzulhijjah)';
+            } else if (hijriInfo.month === 12 && hijriInfo.day === 10) {
+                holidayName = 'Hari Raya Idul Adha (10 Dzulhijjah)';
+            }
+
+            if (holidayName) {
+                return {
+                    type: 'holiday',
+                    badge: 'Hari Raya / PHBI',
+                    note: holidayName
+                };
+            }
+
+            const sunnahs = [];
+            if (isAyyamulBidh) sunnahs.push('Puasa Sunnah Ayyamul Bidh (13–15 H)');
+            if (dow === 1) sunnahs.push('Puasa Sunnah Senin');
+            if (dow === 4) sunnahs.push('Puasa Sunnah Kamis');
+            if (dow === 5) sunnahs.push('Sunnah Jum\'at & Al-Kahfi');
+
+            if (sunnahs.length) {
+                return {
+                    type: 'sunnah',
+                    badge: 'Puasa / Sunnah',
+                    note: sunnahs.join(' • ')
+                };
+            }
+
             return {
-                badge: badges.length ? badges[0] : 'Hari Biasa',
-                note: badges.length ? `Amalan dianjurkan: ${badges.join(' • ')}` : 'Perbanyak dzikir, tilawah & sedekah harian'
+                type: 'normal',
+                badge: 'Hari Biasa',
+                note: 'Tanggal Hijriah & Masehi umum'
             };
         }
 
@@ -1120,26 +1171,30 @@
             if (isMuslimah) {
                 return `<div class="${bg} w-full h-full rounded-2xl flex items-center justify-center relative overflow-hidden">
                     <svg class="w-9 h-9" viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <!-- Kerudung chibi perempuan menggemaskan -->
-                        <path d="M18 4.5C9.6 4.5 5.6 11 5.6 19.6C5.6 24.8 4.8 28.2 4 31H32C31.2 28.2 30.4 24.8 30.4 19.6C30.4 11 26.4 4.5 18 4.5Z" fill="currentColor" fill-opacity="0.24" />
-                        <!-- Pita kecil lucu di puncak kerudung -->
-                        <path d="M18 6.4L14.8 4.4C14.1 4 13.5 4.8 14 5.5L16.4 7.2" fill="currentColor" fill-opacity="0.35" />
-                        <path d="M18 6.4L21.2 4.4C21.9 4 22.5 4.8 22 5.5L19.6 7.2" fill="currentColor" fill-opacity="0.35" />
-                        <circle cx="18" cy="6.6" r="1.1" fill="currentColor" />
-                        <!-- Wajah bulat chibi perempuan -->
-                        <ellipse cx="18" cy="18.6" rx="7.3" ry="6.7" fill="#FDFBF7" />
-                        <!-- Mata chibi bulat besar berbinar -->
-                        <circle cx="15" cy="18.1" r="1.85" fill="currentColor" stroke="none" />
-                        <circle cx="21" cy="18.1" r="1.85" fill="currentColor" stroke="none" />
-                        <circle cx="15.55" cy="17.45" r="0.65" fill="#FFFFFF" stroke="none" />
-                        <circle cx="21.55" cy="17.45" r="0.65" fill="#FFFFFF" stroke="none" />
+                        <!-- Kerudung / hijab chibi perempuan menutupi kepala & leher -->
+                        <path d="M18 3.5C9.4 3.5 4.8 9.8 4.8 18.8C4.8 24.4 3.6 28.6 2.8 31.8H33.2C32.4 28.6 31.2 24.4 31.2 18.8C31.2 9.8 26.6 3.5 18 3.5Z" fill="currentColor" fill-opacity="0.34" />
+                        <!-- Pita kecil di puncak kerudung -->
+                        <path d="M18 5.6L14 3.2C13.2 2.8 12.6 3.8 13.3 4.6L16.2 6.5" fill="currentColor" fill-opacity="0.45" />
+                        <path d="M18 5.6L22 3.2C22.8 2.8 23.4 3.8 22.7 4.6L19.8 6.5" fill="currentColor" fill-opacity="0.45" />
+                        <circle cx="18" cy="5.9" r="1.2" fill="currentColor" />
+                        <!-- Bukaan wajah bulat chibi di dalam kerudung -->
+                        <ellipse cx="18" cy="18.2" rx="6.9" ry="6.2" fill="#FDFBF7" />
+                        <!-- Lipatan kerudung di sisi kanan-kiri wajah & bawah dagu -->
+                        <path d="M11.3 16.5C9.3 18.5 8.8 22.2 10.2 25.8" />
+                        <path d="M24.7 16.5C26.7 18.5 27.2 22.2 25.8 25.8" />
+                        <path d="M12.2 23.4C14.2 25.6 21.8 25.6 23.8 23.4" />
+                        <!-- Mata chibi bulat berbinar -->
+                        <circle cx="15.1" cy="17.8" r="1.9" fill="currentColor" stroke="none" />
+                        <circle cx="20.9" cy="17.8" r="1.9" fill="currentColor" stroke="none" />
+                        <circle cx="15.65" cy="17.15" r="0.68" fill="#FFFFFF" stroke="none" />
+                        <circle cx="21.45" cy="17.15" r="0.68" fill="#FFFFFF" stroke="none" />
                         <!-- Pipi chibi merona -->
-                        <ellipse cx="12.8" cy="20.5" rx="1.55" ry="0.9" fill="#D98A9E" fill-opacity="0.65" stroke="none" />
-                        <ellipse cx="23.2" cy="20.5" rx="1.55" ry="0.9" fill="#D98A9E" fill-opacity="0.65" stroke="none" />
+                        <ellipse cx="12.8" cy="20.1" rx="1.6" ry="0.9" fill="#D98A9E" fill-opacity="0.75" stroke="none" />
+                        <ellipse cx="23.2" cy="20.1" rx="1.6" ry="0.9" fill="#D98A9E" fill-opacity="0.75" stroke="none" />
                         <!-- Senyum chibi manis -->
-                        <path d="M16.3 21.1C17.2 22.15 18.8 22.15 19.7 21.1" />
-                        <!-- Lipatan kerudung -->
-                        <path d="M10.8 29.8C13 26.6 15.4 25.6 18 25.6C20.6 25.6 23 26.6 25.2 29.8" />
+                        <path d="M16.3 20.8C17.1 21.85 18.9 21.85 19.7 20.8" />
+                        <!-- Bagian bawah kerudung menutup leher & bahu -->
+                        <path d="M8.8 31.8C10.5 27.6 13.8 26.2 18 26.2C22.2 26.2 25.5 27.6 27.2 31.8" />
                     </svg>
                 </div>`;
             }
@@ -1278,6 +1333,7 @@
                 accent: newProfileCategory === 'muslimah' ? 'rose' : 'sage',
                 haidDates: [],
                 cycleLength: 28,
+                mensMonthOffset: 0,
                 logs: {},
                 favoriteDoas: [],
                 readDoas: []
@@ -1389,7 +1445,7 @@
             }
 
             const haidSet = new Set(dates);
-            // Hitung hari beruntun sampai hari terakhir haid atau hari ini
+            // Hitung hari beruntun khusus berdasarkan data haid milik profil ini saja
             let anchorDate = isTodayHaid ? new Date(today) : parseDateKey(dates[dates.length - 1]);
             let consecutiveDays = 0;
             let cursor = new Date(anchorDate);
@@ -1402,7 +1458,7 @@
             const hphtKey = dates[dates.length - 1];
             const hphtDate = parseDateKey(hphtKey);
 
-            // Hitung 3 siklus haid berikutnya (setiap siklus cycleLen hari)
+            // Hitung 3 siklus haid berikutnya khusus untuk profil ini
             const fertileSet = new Set();
             const predictedSet = new Set();
             const threeMonthCycles = [];
@@ -1449,6 +1505,22 @@
                 fertileSet,
                 predictedSet
             };
+        }
+
+        function changeMensMonthOffset(delta) {
+            const p = getActiveProfile();
+            if (!p) return;
+            p.mensMonthOffset = (typeof p.mensMonthOffset === 'number' ? p.mensMonthOffset : 0) + delta;
+            saveAppState();
+            renderMenstruasiTab(p);
+        }
+
+        function resetMensMonthOffset() {
+            const p = getActiveProfile();
+            if (!p) return;
+            p.mensMonthOffset = 0;
+            saveAppState();
+            renderMenstruasiTab(p);
         }
 
         function toggleTodayHaid() {
@@ -1557,7 +1629,8 @@
 
             const info = getHaidCycleSummary(profile);
             const isLiburSholat = info.isTodayHaid && !info.isIstihadhah;
-            const viewDate = new Date(new Date().getFullYear(), new Date().getMonth() + calendarMonthOffset, 1);
+            const profileMonthOffset = typeof profile.mensMonthOffset === 'number' ? profile.mensMonthOffset : 0;
+            const viewDate = new Date(new Date().getFullYear(), new Date().getMonth() + profileMonthOffset, 1);
             const year = viewDate.getFullYear();
             const month = viewDate.getMonth();
             const monthTitle = viewDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
@@ -1659,12 +1732,12 @@
                 <!-- Kalender Tunggal Menstruasi -->
                 <div class="bg-white muslim-frame-card rounded-3xl p-4 sm:p-6 border border-pastel-warm shadow-card space-y-4">
                     <div class="flex items-center justify-between gap-2">
-                        <button onclick="changeCalendarMonth(-1)" class="w-9 h-9 rounded-2xl bg-pastel-cream border border-pastel-warm font-extrabold text-pastel-ink hover:bg-pastel-warm cursor-pointer">←</button>
-                        <button onclick="resetCalendarToToday()" class="text-center cursor-pointer">
+                        <button onclick="changeMensMonthOffset(-1)" class="w-9 h-9 rounded-2xl bg-pastel-cream border border-pastel-warm font-extrabold text-pastel-ink hover:bg-pastel-warm cursor-pointer">←</button>
+                        <button onclick="resetMensMonthOffset()" class="text-center cursor-pointer">
                             <h3 class="text-sm sm:text-lg font-extrabold text-pastel-ink">${monthTitle}</h3>
-                            <p class="text-[10px] text-pastel-muted">Ketuk nama bulan untuk kembali ke bulan ini • Ketuk tanggal untuk toggle Libur Sholat</p>
+                            <p class="text-[10px] text-pastel-muted">Data khusus ${profile.name} • Ketuk nama bulan untuk kembali ke bulan ini</p>
                         </button>
-                        <button onclick="changeCalendarMonth(1)" class="w-9 h-9 rounded-2xl bg-pastel-cream border border-pastel-warm font-extrabold text-pastel-ink hover:bg-pastel-warm cursor-pointer">→</button>
+                        <button onclick="changeMensMonthOffset(1)" class="w-9 h-9 rounded-2xl bg-pastel-cream border border-pastel-warm font-extrabold text-pastel-ink hover:bg-pastel-warm cursor-pointer">→</button>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2 text-[11px] font-bold">
@@ -2088,17 +2161,17 @@
             }
 
             const haSunrise = hourAngleForZenith(90.833);
-            const haFajr = hourAngleForZenith(110);   // ~20 deg below horizon
-            const haIsha = hourAngleForZenith(108);   // ~18 deg below horizon
+            const haFajr = hourAngleForZenith(109.1);
+            const haIsha = hourAngleForZenith(107.6);
 
             const tanDiff = Math.abs(latRad - decl);
             const asharZenith = toDeg(Math.atan(1 + Math.tan(toRad(tanDiff))));
             const haAsr = hourAngleForZenith(90 - asharZenith);
 
-            // Koreksi ihtiyati 2 menit
-            const subuhMin = solarNoonMin - haFajr + 2;
-            const terbitMin = solarNoonMin - haSunrise;
-            const dzuhurMin = solarNoonMin + 2;
+            // Kalibrasi waktu sholat agar selaras dengan jadwal referensi (+2 menit)
+            const subuhMin = solarNoonMin - haFajr;
+            const terbitMin = solarNoonMin - haSunrise + 0.5;
+            const dzuhurMin = solarNoonMin + 0.5;
             const asharMin = solarNoonMin + haAsr + 2;
             const maghribMin = solarNoonMin + haSunrise + 2;
             const isyaMin = solarNoonMin + haIsha + 2;
@@ -2402,16 +2475,10 @@
             const firstDow = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const todayKey = toDateKey(now);
-            const haidInfo = getHaidCycleSummary(profile);
 
             const headingEl = document.getElementById('islamic-month-heading');
             if (headingEl) {
                 headingEl.textContent = viewDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-            }
-
-            const legendHaid = document.getElementById('cal-legend-haid');
-            if (legendHaid) {
-                legendHaid.classList.toggle('hidden', profile?.category !== 'muslimah');
             }
 
             const grid = document.getElementById('islamic-calendar-grid');
@@ -2427,49 +2494,28 @@
                 const key = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const hijri = getHijriInfo(dateObj);
                 const sunnah = getSunnahDayInfo(dateObj, hijri);
-                const isHaid = profile?.category === 'muslimah' && haidInfo.haidSet.has(key);
-                const wCount = profile?.logs?.[key]?.wajib ? Object.values(profile.logs[key].wajib).filter(Boolean).length : 0;
-                const isSunnahDay = sunnah.badge !== 'Hari Biasa';
                 const isToday = key === todayKey;
                 const isSelected = key === selectedCalendarDateKey;
 
                 let bgClass = 'bg-white border-pastel-warm text-pastel-ink hover:bg-pastel-cream';
-                if (isHaid) {
-                    bgClass = 'bg-pastel-roseLight border-pastel-rose text-pastel-roseDark';
-                } else if (wCount === 5) {
-                    bgClass = 'bg-pastel-sageLight border-pastel-sage/50 text-pastel-sageDark';
-                } else if (isSunnahDay) {
-                    bgClass = 'bg-pastel-butterLight/75 border-pastel-butter/60 text-pastel-ink';
+                let subTag = '';
+                if (sunnah.type === 'holiday') {
+                    bgClass = 'bg-pastel-sageLight border-pastel-sage text-pastel-sageDark font-bold';
+                    subTag = 'Hari Raya';
+                } else if (sunnah.type === 'sunnah') {
+                    bgClass = 'bg-pastel-butterLight/80 border-pastel-butter/70 text-pastel-ink';
+                    subTag = 'Sunnah';
                 }
 
                 const ringClass = isSelected ? 'ring-2 ring-pastel-sageDark' : (isToday ? 'ring-2 ring-pastel-ink/40' : '');
 
-                html += `<button type="button" onclick="selectCalendarDate('${key}')" class="h-14 sm:h-16 rounded-2xl border ${bgClass} ${ringClass} p-1 flex flex-col items-center justify-center transition cursor-pointer">
+                html += `<button type="button" onclick="selectCalendarDate('${key}')" class="h-14 sm:h-16 rounded-2xl border ${bgClass} ${ringClass} p-1 flex flex-col items-center justify-center transition cursor-pointer min-w-0">
                     <span class="text-xs sm:text-sm font-extrabold leading-none">${d}</span>
-                    <span class="text-[9px] font-bold text-pastel-muted mt-0.5">${hijri.day} H</span>
-                    <span class="text-[9px] font-extrabold leading-none mt-0.5">${isHaid ? 'Libur' : wCount > 0 ? `${wCount}/5` : isSunnahDay ? 'Sunnah' : ''}</span>
+                    <span class="text-[9px] font-bold text-pastel-muted mt-0.5 truncate max-w-full">${hijri.day} H</span>
+                    <span class="text-[9px] font-extrabold leading-none mt-0.5 truncate max-w-full ${sunnah.type === 'holiday' ? 'text-pastel-sageDark' : 'text-pastel-butterDark'}">${subTag}</span>
                 </button>`;
             }
             grid.innerHTML = html;
-
-            const detailBox = document.getElementById('selected-calendar-detail');
-            if (detailBox && selectedCalendarDateKey) {
-                const selDate = parseDateKey(selectedCalendarDateKey);
-                const selHijri = getHijriInfo(selDate);
-                const selSunnah = getSunnahDayInfo(selDate, selHijri);
-                const selHaid = profile?.category === 'muslimah' && haidInfo.haidSet.has(selectedCalendarDateKey);
-                const selWajib = profile?.logs?.[selectedCalendarDateKey]?.wajib ? Object.values(profile.logs[selectedCalendarDateKey].wajib).filter(Boolean).length : 0;
-                detailBox.innerHTML = `<div class="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                        <p class="text-[10px] font-extrabold uppercase text-pastel-skyDark">${selHijri.full}</p>
-                        <h4 class="text-sm sm:text-base font-extrabold text-pastel-ink">${formatIndoDate(selDate)}</h4>
-                        <p class="text-xs text-pastel-muted mt-0.5">${selSunnah.note}</p>
-                    </div>
-                    <span class="px-3 py-1.5 rounded-2xl text-xs font-extrabold ${selHaid ? 'bg-pastel-roseLight text-pastel-roseDark' : 'bg-pastel-sageLight text-pastel-sageDark'}">
-                        ${selHaid ? 'Libur Sholat' : `Sholat Wajib: ${selWajib}/5`}
-                    </span>
-                </div>`;
-            }
         }
 
         function renderProfileSettings(profile) {
